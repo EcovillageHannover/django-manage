@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% load bootstrap4 %}
+
+{% block title %}
+    Anlegen eines EVH Accounts
+{% endblock %}
+
+
+{% block content %}
+
+<form role="form" method="post">
+
+  <p>
+    Datenschutz Tralalala
+  Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+  eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+  enimad minim veniam, quis nostrud exercitation ullamco laboris nisi
+  ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+  reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+  pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+  culpa qui officia deserunt mollit anim id est laborum.
+  </p>
+  
+ <div class="card bg-light p-3">
+   <p class="mb-0">
+     <strong>Vorname:</strong> {{vorname}}<br/>
+     <strong>Nachname:</strong> {{nachname}}<br/>
+     <strong>Benutzername:</strong> {{username}}<br/>
+     <strong>E-Mailaddresse:</strong> {{mail}}
+   </p>
+ </div>
+
+ {% csrf_token %}
+
+ {% if not success %}
+ <p>
+ <input type="hidden" id="submit" name="submit" value="true">
+ <input type="checkbox" id="datensatz" name="datensatz" value="true"> Die angezeigten Daten sind korrekt.<br/>
+ <input type="checkbox" id="datenschutz" name="datenschutz" value="true"> Ich stimme der Verwendung der Daten zu.<br/>
+ <input type="checkbox" id="create" name="create" value="true"> Legen Sie diesen Account an.<br/>
+ </p>
+ 
+ <p>
+   {% buttons submit='OK' reset='Cancel'%}{% endbuttons %}
+ </p>
+{% else %}
+
+  <p>
+    <div class="alert alert-success">
+      <a href="{% url 'index' %}">Zur Übersicht der verfügbaren Dienste</a>
+    </div>
+  </p>
+{% endif %}
+</form>
+
+
+{% endblock %}

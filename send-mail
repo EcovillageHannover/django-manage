@@ -1,0 +1,52 @@
+#!/usr/bin/python3
+# coding: utf-8
+
+import argparse
+
+import yaml
+
+import smtplib
+
+from account.models import *
+import evh.settings_local as config
+
+def send_mail(vorname, nachname, email):
+    username = make_username(vorname, nachname)
+    token = format_token(
+        config.account_link_key,
+        [vorname, nachname, username, email]
+    )
+
+    sender_name = "EVH-Digitales"
+    sender_mail = "digitales@ecovillage-hannover.de"
+    url = config.account_url + token.decode('utf-8')
+
+    message = f"""From: {sender_name} <{sender_mail}>
+To: {vorname} {nachname} <{email}>
+MIME-Version: 1.0
+Content-type: text/html
+Subject: [EVH Account] Link zur Account-Erstellung
+
+<a href="{url}">Klicke hier um einen EVH Account zu erstellen.<a>
+(Geht noch nicht und der Text ist auch nicht gut)
+"""
+
+    try:
+        conn = smtplib.SMTP(config.EMAIL_HOST)
+        conn.login(config.EMAIL_HOST_USER, config.EMAIL_HOST_PASSWORD)
+        conn.sendmail(sender_mail, [email], message)
+        print(f"Successfully sent email to {email}")
+    except smtplib.SMTPException:
+        print(f"Error: unable to send email to {email}")
+
+def main():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('Vorname')
+    parser.add_argument('Nachname')
+    parser.add_argument('Mail')
+    args = parser.parse_args()
+
+    send_mail(args.Vorname, args.Nachname, args.Mail)
+
+if __name__ == '__main__':
+   main()
