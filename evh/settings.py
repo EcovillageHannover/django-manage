@@ -26,7 +26,7 @@ SECRET_KEY = '^m*-q1z&zkijjp=iib-ge3&&*w4vb@3jf&ej7(m$(&s7k_0n&+'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['account.c.dokucode.de', 'account.my-evh.de']
 
 
 # Application definition
