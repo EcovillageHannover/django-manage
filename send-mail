@@ -27,8 +27,8 @@ MIME-Version: 1.0
 Content-type: text/html
 Subject: [EVH Account] Link zur Account-Erstellung
 
+Hallo {vorname} {nachname},<br/>
 <a href="{url}">Klicke hier um einen EVH Account zu erstellen.<a>
-(Geht noch nicht und der Text ist auch nicht gut)
 """
 
     try:

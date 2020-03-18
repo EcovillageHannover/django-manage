@@ -1,0 +1,4 @@
+passlib
+django
+python-ldap
+django-bootstrap4
