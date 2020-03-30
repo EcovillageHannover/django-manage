@@ -17,24 +17,29 @@ def send_mail(vorname, nachname, email):
         [vorname, nachname, username, email]
     )
 
-    sender_name = "EVH-Digitales"
-    sender_mail = "digitales@ecovillage-hannover.de"
+    sender_from = config.EMAIL_FROM
     url = config.account_url + token.decode('utf-8')
 
-    message = f"""From: {sender_name} <{sender_mail}>
+    message = f"""From: {sender_from}
 To: {vorname} {nachname} <{email}>
 MIME-Version: 1.0
 Content-type: text/html
 Subject: [EVH Account] Link zur Account-Erstellung
 
-Hallo {vorname} {nachname},<br/>
-<a href="{url}">Klicke hier um einen EVH Account zu erstellen.<a>
+<p>Hallo {vorname} {nachname},</p>
+<p>
+Diese Mail enth&auml;lt alle n&ouml;tigen Daten um einen Account beim Ecovillage Hannover zu erstellen. Wenn du einen Account erstellen m&ouml;chtest, dann</p>
+<p><a href="{url}">Klicke auf diesen Link um einen Account zu erstellen</a></p>
+<p>Sollte dieser Link nicht funktionieren, so kannst du mit dem, in dieser Mail enthaltenen Code, einen Account auf der Seite des Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich gerne jederzeit an uns.
+</p>
+<p>
+URL: {config.account_url}<br/> 
+Erstellungscode: {token.decode()}</p>
 """
-
     try:
         conn = smtplib.SMTP(config.EMAIL_HOST)
         conn.login(config.EMAIL_HOST_USER, config.EMAIL_HOST_PASSWORD)
-        conn.sendmail(sender_mail, [email], message)
+        conn.sendmail(config.EMAIL_HOST_USER, [email], message)
         print(f"Successfully sent email to {email}")
     except smtplib.SMTPException:
         print(f"Error: unable to send email to {email}")

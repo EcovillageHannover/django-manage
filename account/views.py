@@ -13,12 +13,30 @@ import logging
 
 import evh.settings as config
 from .models import parse_token
+from .forms import *
+
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-def create(request, token):
-    context = {}
+def create(request, token=None):
+    context = dict(
+        form=CreateAccountForm(),
+        contact=config.EMAIL_FROM,
+    )
+    
+    # Wenn wir kein Token haben, zeigen wir das Token-Eingabe Formular an.
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request:
+        context['form'] = CreateAccountForm(request.POST)
+        if context['form'].is_valid():
+            token = context['form'].cleaned_data['token']
+
+    if token is None:
+        return render(request, 'account/create.html', context)
+
+    context['token'] = token.strip()
+
     try:
         args = parse_token(config.account_link_key, token)
         vorname, nachname, username, mail = args
@@ -27,12 +45,11 @@ def create(request, token):
         logger.error(f"Invalid Token: {e}")
         return render(request, 'account/create.html', context)
 
-    context = dict(
-        vorname=vorname,
-        nachname=nachname,
-        username=username,
-        mail=mail,
-    )
+    context['vorname'] = vorname
+    context['nachname']  = nachname
+    context['username'] = username
+    context['mail'] = mail
+
     if request.POST.get('submit') == 'true':
         checkboxes = [
             request.POST.get('datensatz'),
@@ -50,6 +67,7 @@ def create(request, token):
                 return render(request, 'account/create.html', context)
         else:
             messages.add_message(request, messages.ERROR, "Ihre Zustimmung ist erforderlich den Account anzulegen.")
+            print("token")
     return render(request, 'account/create.html', context)
 
 
@@ -103,9 +121,9 @@ dein Account wurde erfolgreich angelegt. Die Zugangsdaten zu diesem Account sind
   Passwort: {password}
 
 -- Team Digitales""",
-        'EVH Digitales <digitales@ecovillage-hannover.de>',
-        [mail],
-        fail_silently=False,
+            config.EMAIL_FROM,
+            [mail],
+            fail_silently=False,
         )
     except Exception as e:
         messages.add_message(request, messages.ERROR,

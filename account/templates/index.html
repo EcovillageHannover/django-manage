@@ -3,21 +3,33 @@
 {% load bootstrap4 %}
 
 {% block title %}
- Übersicht über die EVH Dienste
+Übersicht über die EVH Dienste
 {% endblock %}
 
 
 {% block content %}
-
-  <div class="card card-light-bg" style="width: 20rem;">
-    <h3 class="card-header">Webchat</h3>
-    <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="/static/riot-logo-hero.svg">
-    <div class="card-block">
-      <p>Motivierender Text...</p>
-      
-      <a href="https://chat.my-evh.de" class="btn btn-primary">Webchat Öffnen</a>
+<div class="container">
+  <div class="row">
+    <div class="col-sm-4">
+    <div class="card card-light-bg">
+      <h3 class="card-header">Account</h3>
+      <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="/static/imgs/account.svg">
+      <div class="card-block">
+        <p>Erstelle einen Account mit einem Erstellungscode.</p>
+        <a href="https://account.my-evh.de/account/create" class="btn btn-primary">Account erstellen</a>
+      </div>
+    </div>
+    </div>
+    <div class="col-sm-4">
+    <div class="card card-light-bg">
+      <h3 class="card-header">Webchat</h3>
+      <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="/static/imgs/riot-logo-hero.svg">
+      <div class="card-block">
+        <p>Hier kannst du mit einzelnen AGs und Teams direkt ins Gespräch kommen.</p>
+        <a href="https://chat.my-evh.de" class="btn btn-primary">Webchat öffnen</a>
+      </div>
     </div>
   </div>
-</a>
-
+  </div>
+</div>
 {% endblock %}

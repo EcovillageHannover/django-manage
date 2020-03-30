@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% load bootstrap4 %}
+
+{% block title %}
+    Anlegen eines EVH Accounts
+{% endblock %}
+
+
+{% block content %}
+
+<form action="/account/create" role="form" method="post">
+ {% csrf_token %}
+  <p>
+    Um einen Account beim Ecovillage Hannover zu aktivieren, benötigst du einen Aktivierungscode. Wenn du Teil der Genossenschaft sein solltest, so solltest du einen solchen Code per Mail erhalten haben. Wenn du kein Mitglied bist oder keinen Code erhalten hast, so wende dich bitte an:<p>
+  <p><strong>{{ contact }}</strong></p>
+ <p>
+   {% bootstrap_form form layout='inline' %}
+  <input type="hidden" id="submit" name="submit" value="true">
+ </p>
+ 
+ <p>
+   {% buttons submit='OK' reset='Cancel'%}{% endbuttons %}
+ </p>
+</form>
+
+{% endblock %}

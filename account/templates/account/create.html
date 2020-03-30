@@ -3,56 +3,63 @@
 {% load bootstrap4 %}
 
 {% block title %}
-    Anlegen eines EVH Accounts
+Anlegen eines EVH Accounts
 {% endblock %}
 
 
 {% block content %}
-
 <form role="form" method="post">
+  {% csrf_token %}
+
+  {% if not token %}
 
   <p>
-    Datenschutz Tralalala
-  Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-  eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-  enimad minim veniam, quis nostrud exercitation ullamco laboris nisi
-  ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-  reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-  pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-  culpa qui officia deserunt mollit anim id est laborum.
+    Um einen Account beim Ecovillage Hannover zu aktivieren, benötigst du einen Aktivierungscode. Wenn du Teil der Genossenschaft sein solltest, so solltest du einen solchen Code per Mail erhalten haben. Wenn du kein Mitglied bist oder keinen Code erhalten hast, so wende dich bitte an:<p>
+  <p><strong>{{ contact }}</strong></p>
+  <p>
+    {% bootstrap_form form layout='inline' %}
+    <input type="hidden" id="submit" name="submit" value="true">
   </p>
-  
- <div class="card bg-light p-3">
-   <p class="mb-0">
-     <strong>Vorname:</strong> {{vorname}}<br/>
-     <strong>Nachname:</strong> {{nachname}}<br/>
-     <strong>Benutzername:</strong> {{username}}<br/>
-     <strong>E-Mailaddresse:</strong> {{mail}}
-   </p>
- </div>
 
- {% csrf_token %}
+  <p>
+    {% buttons submit='OK' reset='Cancel'%}{% endbuttons %}
+  </p>
 
- {% if not success %}
- <p>
- <input type="hidden" id="submit" name="submit" value="true">
- <input type="checkbox" id="datensatz" name="datensatz" value="true"> Die angezeigten Daten sind korrekt.<br/>
- <input type="checkbox" id="datenschutz" name="datenschutz" value="true"> Ich stimme der Verwendung der Daten zu.<br/>
- <input type="checkbox" id="create" name="create" value="true"> Legen Sie diesen Account an.<br/>
- </p>
- 
- <p>
-   {% buttons submit='OK' reset='Cancel'%}{% endbuttons %}
- </p>
-{% else %}
+  {% else %}
+  <p>
+    <strong>Datenschutz</strong>: Mit dem Erstellen dieses Accounts willigst du ein, dass die folgenden Daten auf Servern des Ecovillage Hannover gespeichert werden. Dort werden Sie dazu verwendet um dein persöhnliches Nutzerkonto zu identifizieren. Solltest du diesen Account nicht mehr haben wollen, kannst du uns zu jedem Zeitpunkt kontaktieren und wir löschen dein Nutzerkonto. Weiteres findest du in unserer Datenschutzerklärung.
+  </p>
+
+  <div class="card bg-light p-3">
+    <p class="mb-0">
+      <strong>Vorname:</strong> {{vorname}}<br/>
+      <strong>Nachname:</strong> {{nachname}}<br/>
+      <strong>Benutzername:</strong> {{username}}<br/>
+      <strong>E-Mailaddresse:</strong> {{mail}}
+    </p>
+  </div>
+
+  {% if not success %}
+  <p>
+    <input type="hidden" id="submit" name="submit" value="true">
+    <input type="hidden" id="token" name="token" value="{{token}}">
+    <input type="checkbox" id="datensatz" name="datensatz" value="true"> Die angezeigten Daten sind korrekt.<br/>
+    <input type="checkbox" id="datenschutz" name="datenschutz" value="true"> Ich stimme der Verwendung der Daten zu.<br/>
+    <input type="checkbox" id="create" name="create" value="true"> Legen Sie diesen Account an.<br/>
+  </p>
+
+  <p>
+    {% buttons submit='OK' reset='Cancel'%}{% endbuttons %}
+  </p>
+  {% else %}
 
   <p>
     <div class="alert alert-success">
       <a href="{% url 'index' %}">Zur Übersicht der verfügbaren Dienste</a>
     </div>
   </p>
-{% endif %}
+  {% endif %}
+
+  {% endif %}
 </form>
-
-
 {% endblock %}
