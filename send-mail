@@ -2,6 +2,8 @@
 # coding: utf-8
 
 import argparse
+import sys
+import csv
 
 import yaml
 
@@ -9,49 +11,80 @@ import smtplib
 
 from account.models import *
 import evh.settings_local as config
+from email.mime.text import MIMEText
 
-def send_mail(vorname, nachname, email):
-    username = make_username(vorname, nachname)
-    token = format_token(
-        config.account_link_key,
-        [vorname, nachname, username, email]
-    )
+def send_mail(args, vorname, nachname, mail, username=None):
+    if not username:
+        username = make_username(vorname, nachname)
 
-    sender_from = config.EMAIL_FROM
+    fields = [
+        vorname.strip(),
+        nachname.strip(),
+        username.strip(),
+        mail.strip()
+    ]
+    token = format_token(config.account_link_key, fields)
+
     url = config.account_url + token.decode('utf-8')
+    preface = "<p>Hallo {vorname} {nachname},</p>"
+    if args.preface:
+        with open(args.preface) as fd:
+            content = fd.read()
+            assert "<p>" in content, "Preface should be an HTML file"
+            preface += content
 
-    message = f"""From: {sender_from}
-To: {vorname} {nachname} <{email}>
-MIME-Version: 1.0
-Content-type: text/html
-Subject: [EVH Account] Link zur Account-Erstellung
+    message = MIMEText(f"""
+    {preface}
+    <p>
+    Diese Mail enthält alle nötigen Daten um einen Account beim ecovillage hannover zu erstellen. Wenn du einen Account erstellen m&ouml;chtest, dann</p>
+    <p><a href="{url}">Klicke auf diesen Link um einen Account zu erstellen</a></p>
+    <p>Sollte dieser Link nicht funktionieren, so kannst du mit dem, in dieser Mail enthaltenen Code, einen Account auf der Seite des Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich gerne jederzeit an uns.
+    </p>
+    <p>
+    URL: {config.account_url}<br/> 
+    Erstellungscode: {token.decode()}</p>
+    <p>Nach der Erstellung des Accounts erhälst Benutzername und Passwort per Mail.</p>
+    <p>-- ecovillage hannover - Team Digitales</p>
+""".encode("utf-8"), _charset='utf-8')
+    
+    message["From"] = config.EMAIL_FROM
+    message["To"] = f"{vorname} {nachname} <{mail}>"
+    message["Subject"] = "[EVH Account] Link zur Account-Erstellung"
+    message["Content-type"] = "text/html"
 
-<p>Hallo {vorname} {nachname},</p>
-<p>
-Diese Mail enth&auml;lt alle n&ouml;tigen Daten um einen Account beim Ecovillage Hannover zu erstellen. Wenn du einen Account erstellen m&ouml;chtest, dann</p>
-<p><a href="{url}">Klicke auf diesen Link um einen Account zu erstellen</a></p>
-<p>Sollte dieser Link nicht funktionieren, so kannst du mit dem, in dieser Mail enthaltenen Code, einen Account auf der Seite des Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich gerne jederzeit an uns.
-</p>
-<p>
-URL: {config.account_url}<br/> 
-Erstellungscode: {token.decode()}</p>
-"""
-    try:
-        conn = smtplib.SMTP(config.EMAIL_HOST)
-        conn.login(config.EMAIL_HOST_USER, config.EMAIL_HOST_PASSWORD)
-        conn.sendmail(config.EMAIL_HOST_USER, [email], message)
-        print(f"Successfully sent email to {email}")
-    except smtplib.SMTPException:
-        print(f"Error: unable to send email to {email}")
+    print("Field:", ", ".join([f"{k}={v}" for k, v in zip(['V', 'N', "U", "M"], fields)]))
+    print("Token:", token.decode())
+    return (mail, message.as_string())
 
 def main():
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('Vorname')
-    parser.add_argument('Nachname')
-    parser.add_argument('Mail')
+    parser = argparse.ArgumentParser(description='Send Account Activations Mails.')
+    parser.add_argument("-f", '--file', help="CSV-File", required=True)
+    parser.add_argument("-s", '--send', help="actually send the mails",
+                        action="store_true", required=False)
     args = parser.parse_args()
 
-    send_mail(args.Vorname, args.Nachname, args.Mail)
+    msgs = []
+    with open(args.file) as fd:
+        for record in csv.DictReader(fd):
+            if record['vorname'].startswith("#"):
+                continue
+            msgs += [send_mail(args, **record)]
+
+    if args.send:
+        answer = input(f"Do you want to send {len(msgs)} mails? (y/N)> ")
+        if answer != 'y':
+            print("Not sending, printing first mail for reference...\n\n")
+            print(msgs[0][1])
+            return
+
+        for mail, message in msgs:
+            try:
+                conn = smtplib.SMTP(config.EMAIL_HOST)
+                conn.login(config.EMAIL_HOST_USER, config.EMAIL_HOST_PASSWORD)
+                conn.sendmail(config.EMAIL_HOST_USER, [mail], message)
+                print(f"Successfully sent email to {mail}")
+            except smtplib.SMTPException:
+                print(f"Error: unable to send email to {mail}")
 
 if __name__ == '__main__':
    main()

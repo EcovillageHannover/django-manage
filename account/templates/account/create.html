@@ -9,12 +9,20 @@ Anlegen eines EVH Accounts
 
 {% block content %}
 <form role="form" method="post">
+  {% if success %}
+  <p>
+    <div class="alert alert-success">
+      <a href="{% url 'index' %}">Zur Übersicht der verfügbaren Dienste</a>
+    </div>
+  </p>
+  {% endif %}
+  
   {% csrf_token %}
 
   {% if not token %}
 
   <p>
-    Um einen Account beim Ecovillage Hannover zu aktivieren, benötigst du einen Aktivierungscode. Wenn du Teil der Genossenschaft sein solltest, so solltest du einen solchen Code per Mail erhalten haben. Wenn du kein Mitglied bist oder keinen Code erhalten hast, so wende dich bitte an:<p>
+    Um einen Account beim ecovillage hannover zu aktivieren, benötigst du einen Aktivierungscode. Wenn du Teil der Genossenschaft sein solltest, so solltest du einen solchen Code per Mail erhalten haben. Wenn du kein Mitglied bist oder keinen Code erhalten hast, so wende dich bitte an:<p>
   <p><strong>{{ contact }}</strong></p>
   <p>
     {% bootstrap_form form layout='inline' %}
@@ -25,21 +33,34 @@ Anlegen eines EVH Accounts
     {% buttons submit='OK' reset='Cancel'%}{% endbuttons %}
   </p>
 
+  
   {% else %}
-  <p>
-    <strong>Datenschutz</strong>: Mit dem Erstellen dieses Accounts willigst du ein, dass die folgenden Daten auf Servern des Ecovillage Hannover gespeichert werden. Dort werden Sie dazu verwendet um dein persöhnliches Nutzerkonto zu identifizieren. Solltest du diesen Account nicht mehr haben wollen, kannst du uns zu jedem Zeitpunkt kontaktieren und wir löschen dein Nutzerkonto. Weiteres findest du in unserer Datenschutzerklärung.
-  </p>
-
-  <div class="card bg-light p-3">
-    <p class="mb-0">
+  <div class="card bg-light p-2 m-3">
+    <h3>Accountinformationen</h3>
+    <p>
       <strong>Vorname:</strong> {{vorname}}<br/>
       <strong>Nachname:</strong> {{nachname}}<br/>
       <strong>Benutzername:</strong> {{username}}<br/>
       <strong>E-Mailaddresse:</strong> {{mail}}
     </p>
+    {% if password %}
+    <p>
+      <strong>Passwort:</strong> {{password}}
+    </p>
+    <p>
+      Das Passwort wurde dir ebenfalls <strong>per Mail</strong> zugesandt.
+    </p>
+    {% endif %}
   </div>
-
+  
   {% if not success %}
+  <div class="card bg-light p-2 m-3">
+    <h3>Datenschutz</h3>
+    <p>
+      Mit dem Erstellen dieses Accounts willigst du ein, dass die folgenden Daten auf Servern des ecovillage hannover gespeichert werden. Dort werden Sie dazu verwendet um dein persöhnliches Nutzerkonto zu identifizieren. Solltest du diesen Account nicht mehr haben wollen, kannst du uns zu jedem Zeitpunkt kontaktieren und wir löschen dein Nutzerkonto. Weiteres findest du in unserer Datenschutzerklärung.
+    </p>
+  </div>
+  
   <p>
     <input type="hidden" id="submit" name="submit" value="true">
     <input type="hidden" id="token" name="token" value="{{token}}">
@@ -50,13 +71,6 @@ Anlegen eines EVH Accounts
 
   <p>
     {% buttons submit='OK' reset='Cancel'%}{% endbuttons %}
-  </p>
-  {% else %}
-
-  <p>
-    <div class="alert alert-success">
-      <a href="{% url 'index' %}">Zur Übersicht der verfügbaren Dienste</a>
-    </div>
   </p>
   {% endif %}
 
