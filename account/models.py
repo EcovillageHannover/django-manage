@@ -3,6 +3,7 @@
 import base64
 import hmac
 import hashlib
+import ldap
 # Create your models here.
 
 def format_token(key, fields):
@@ -29,3 +30,14 @@ def make_username(vorname, nachname):
     for k,v in repl.items():
         username = username.replace(k,v)
     return username
+
+
+def ldap_users(config):
+    conn = ldap.initialize(config.ldap_host)
+    conn.simple_bind_s(config.ldap_user, config.ldap_password)
+    ret = conn.search_s(config.ldap_user_dn,
+                      ldap.SCOPE_SUBTREE,
+                      "(objectClass=inetOrgPerson)",
+                      ["cn", "mail", "displayName"]
+    )
+    return {x['cn'][0].decode(): x for dn, x in ret}

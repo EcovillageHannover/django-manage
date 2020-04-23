@@ -11,66 +11,115 @@ import smtplib
 
 from account.models import *
 import evh.settings_local as config
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-def send_mail(args, vorname, nachname, mail, username=None):
-    if not username:
-        username = make_username(vorname, nachname)
-
-    fields = [
-        vorname.strip(),
-        nachname.strip(),
-        username.strip(),
-        mail.strip()
-    ]
+def send_mail(args, record):
+    fields = []
+    for k in ('vorname', 'nachname', 'username', 'mail'):
+        fields.append(record[k].strip())
     token = format_token(config.account_link_key, fields)
 
-    url = config.account_url + token.decode('utf-8')
-    preface = "<p>Hallo {vorname} {nachname},</p>"
+    record["url"] = config.account_url + token.decode('utf-8')
+    record["config"] = config
+    record["token"] = token.decode()
+
     if args.preface:
         with open(args.preface) as fd:
-            content = fd.read()
-            assert "<p>" in content, "Preface should be an HTML file"
-            preface += content
+            preface = fd.read()
+            record["preface"] = preface.format(**record)
+    else:
+        record["preface"] = ""
 
-    message = MIMEText(f"""
-    {preface}
+    html = """
+    <p>Hallo {vorname} {nachname},</p>
     <p>
-    Diese Mail enthält alle nötigen Daten um einen Account beim ecovillage hannover zu erstellen. Wenn du einen Account erstellen m&ouml;chtest, dann</p>
-    <p><a href="{url}">Klicke auf diesen Link um einen Account zu erstellen</a></p>
-    <p>Sollte dieser Link nicht funktionieren, so kannst du mit dem, in dieser Mail enthaltenen Code, einen Account auf der Seite des Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich gerne jederzeit an uns.
+    {preface}
     </p>
     <p>
-    URL: {config.account_url}<br/> 
-    Erstellungscode: {token.decode()}</p>
+    Diese Mail enthält alle nötigen Daten um einen Account beim ecovillage hannover zu erstellen. Wenn du einen Account erstellen möchtest, dann</p>
+    <p><a href="{url}">Klicke auf diesen Link um einen Account zu erstellen</a></p>
+    <p>Sollte dieser Link nicht funktionieren, so kannst du mit dem, in dieser Mail enthaltenen Aktivierungscode, einen Account auf der Seite des Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich gerne jederzeit an uns (digitales@ecovillage-hannover.de).
+    </p>
+    <p><strong>URL:</strong> {config.account_url}</p>
+    <p><strong>Aktivierungscode:</strong> {token}</p>
     <p>Nach der Erstellung des Accounts erhälst Benutzername und Passwort per Mail.</p>
     <p>-- ecovillage hannover - Team Digitales</p>
-""".encode("utf-8"), _charset='utf-8')
-    
+""".format(**record)
+
+    text = """
+Hallo {vorname} {nachname},
+
+{preface}
+
+Diese Mail enthält alle nötigen Daten um einen Account beim ecovillage
+hannover zu erstellen. Wenn du einen Account erstellen möchtest, dann
+Klicke auf diesen Link:
+
+  {url}
+
+Sollte dieser Link nicht funktionieren, so kannst du mit dem, in
+dieser Mail enthaltenen Aktivierungscode, einen Account auf der Seite des
+Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich gerne
+jederzeit an uns (digitales@ecovillage-hannover.de)
+
+  URL:             {config.account_url}
+
+  Aktivierungscode: {token}
+
+Nach der Erstellung des Accounts erhälst Benutzername und Passwort per
+Mail.
+
+   -- ecovillage hannover - Team Digitales
+""".format(**record)
+
+    message = MIMEMultipart('alternative')
+    message.attach(MIMEText(text, 'plain'))
+    message.attach(MIMEText(html, 'html'))
+
     message["From"] = config.EMAIL_FROM
-    message["To"] = f"{vorname} {nachname} <{mail}>"
+    message["To"] = "{vorname} {nachname} <{mail}>".format(**record)
     message["Subject"] = "[EVH Account] Link zur Account-Erstellung"
-    message["Content-type"] = "text/html"
 
     print("Field:", ", ".join([f"{k}={v}" for k, v in zip(['V', 'N', "U", "M"], fields)]))
     print("Token:", token.decode())
-    return (mail, message.as_string())
+    return (record['mail'], message.as_string())
 
 def main():
     parser = argparse.ArgumentParser(description='Send Account Activations Mails.')
     parser.add_argument("-f", '--file', help="CSV-File", required=True)
+    parser.add_argument("-r", '--resend', metavar="USERNAME",
+                        help="Resend the Mail although the user already has an account")
+    parser.add_argument("-p", '--preface', help="A HTML file to replace the default preface")
     parser.add_argument("-s", '--send', help="actually send the mails",
                         action="store_true", required=False)
     args = parser.parse_args()
 
     msgs = []
+    existing_users = ldap_users(config)
     with open(args.file) as fd:
         for record in csv.DictReader(fd):
             if record['vorname'].startswith("#"):
                 continue
-            msgs += [send_mail(args, **record)]
 
-    if args.send:
+            if not record.get('username'):
+                record['username'] = make_username(
+                    record['vorname'],
+                    record['nachname'])
+
+            if args.resend:
+                if args.resend != record['username']:
+                    continue
+            elif record['username'] in existing_users:
+                print(f"{record['vorname']} {record['nachname']} already has an Account. Skipping")
+                continue
+
+            msgs += [send_mail(args, record)]
+
+    print("Empfänger:", repr([m[0] for m in msgs]))
+
+    if args.send and msgs:
+
         answer = input(f"Do you want to send {len(msgs)} mails? (y/N)> ")
         if answer != 'y':
             print("Not sending, printing first mail for reference...\n\n")
