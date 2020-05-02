@@ -17,15 +17,27 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from evh import views
 from django.conf import settings
+from django.http import HttpResponse
 from django.views.static import serve
+from django.views.decorators.http import require_GET
+
 
 # Sorry mum. But somehow this is necessary
 def serve_hull(*args, **kwargs):
     kwargs['document_root'] = settings.STATIC_ROOT
     return serve(*args, **kwargs)
 
+@require_GET
+def robots_txt(request):
+    lines = [
+        "User-Agent: *",
+        "Disallow: /",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
+
 urlpatterns = [
     path('', views.index, name='index'),
+    path("robots.txt", robots_txt),
     path('account/', include('account.urls')),
     re_path(r'^static/(?P<path>.*)$', serve_hull),
 ]
