@@ -38,6 +38,10 @@ def ldap_users(config):
     ret = conn.search_s(config.ldap_user_dn,
                       ldap.SCOPE_SUBTREE,
                       "(objectClass=inetOrgPerson)",
-                      ["cn", "mail", "displayName"]
+                      ["cn", "mail", "displayName", 'memberOf']
     )
-    return {x['cn'][0].decode(): x for dn, x in ret}
+    ret = {x['cn'][0].decode(): x for dn, x in ret}
+    for dn in ret:
+        groups = [x.decode().split(',')[0].split('=')[1] for x in ret[dn].get('memberOf', [])]
+        ret[dn]['groups'] = groups
+    return ret

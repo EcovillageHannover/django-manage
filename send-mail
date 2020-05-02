@@ -83,6 +83,7 @@ Mail.
 
     print("Field:", ", ".join([f"{k}={v}" for k, v in zip(['V', 'N', "U", "M"], fields)]))
     print("Token:", token.decode())
+    print()
     return (record['mail'], message.as_string())
 
 def main():
@@ -90,6 +91,8 @@ def main():
     parser.add_argument("-f", '--file', help="CSV-File", required=True)
     parser.add_argument("-r", '--resend', metavar="USERNAME",
                         help="Resend the Mail although the user already has an account")
+    parser.add_argument("-g", '--group', metavar="GROUP",
+                        help="Send mail only to group")
     parser.add_argument("-p", '--preface', help="A HTML file to replace the default preface")
     parser.add_argument("-s", '--send', help="actually send the mails",
                         action="store_true", required=False)
@@ -98,25 +101,39 @@ def main():
     msgs = []
     existing_users = ldap_users(config)
     with open(args.file) as fd:
+        group = None
         for record in csv.DictReader(fd):
+            for field in record:
+                if record[field]:
+                    record[field] = record[field].strip()
+
             if record['vorname'].startswith("#"):
+                if 'group' in record['vorname'] and '=' in record['vorname']:
+                    group = record['vorname'].lstrip('#').split("=")[1].strip()
+                    group = group.lower()
                 continue
 
             if not record.get('username'):
                 record['username'] = make_username(
                     record['vorname'],
-                    record['nachname'])
+                    record['nachname']
+                )
+            if args.group and args.group != group:
+                continue
 
             if args.resend:
                 if args.resend != record['username']:
                     continue
             elif record['username'] in existing_users:
-                print(f"{record['vorname']} {record['nachname']} already has an Account. Skipping")
+                # print(f"{record['vorname']} {record['nachname']} already has an Account. Skipping")
+                ldap_user = existing_users[record['username']]
+                if group and group not in ldap_user['groups']:
+                    print("WARNING: User {} is not in group {}".format(record['username'], group))
                 continue
 
             msgs += [send_mail(args, record)]
 
-    print("Empfänger:", repr([m[0] for m in msgs]))
+    print(f"Empfänger({len(msgs)})", repr([m[0] for m in msgs]))
 
     if args.send and msgs:
 
