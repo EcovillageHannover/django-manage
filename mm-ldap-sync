@@ -163,15 +163,23 @@ class M3Sync(object):
             r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
 
         ldap_data = {}
+
+
         for group in self.ldap.entries:
             # change all space to dot for group name
             list_name = re.sub(
                 r'\s+', '.', getattr(group, self.sync['group_name_attr']).value)
 
-            #
-            ldap_data[self.get_list(list_name)] = dict(
+            if not self.config.has_section(f'sync.{list_name}'):
+                self.logger.debug(f'Skipping unconfigured group {list_name}')
+                continue
+            
+            list_data = dict(
                 zip(self.__attrs, [[] for x in range(len(self.__attrs))])
             )
+            list_data.update(self.config.items(f'sync.{list_name}'))
+            ldap_data[self.get_list(list_name)] = list_data
+
 
             for attr in self.__attrs:
                 for dn in getattr(group, self.sync['{0}_attr'.format(attr)]):
@@ -206,10 +214,11 @@ class M3Sync(object):
         try:
             self.m3.create_domain(self.sync['default_list_domain'])
         except HTTPError:
-            self.logger.warn('domain {0} already exist'.format(
+            self.logger.warning('domain {0} already exist'.format(
                 self.sync['default_list_domain']))
 
         domain = self.m3.get_domain(self.sync['default_list_domain'])
+
 
         # LDAP -> MAILMAN add data to mailman
         for list_name, datas in ldap_data.items():
@@ -222,7 +231,7 @@ class M3Sync(object):
                 mlist.settings['send_welcome_message'] = False
                 mlist.settings.save()
             except HTTPError:
-                self.logger.warn(
+                self.logger.warning(
                     "List with name {0} already exists".format(list_name))
                 mlist = self.get_list_byname(domain, list_name)
 
@@ -235,7 +244,7 @@ class M3Sync(object):
                     mlist.subscribe(subscriber, pre_verified=True,
                                     pre_confirmed=True, pre_approved=True)
                 except HTTPError:
-                    self.logger.warn("subscriber {0} already exist in {1}".format(
+                    self.logger.warning("subscriber {0} already exist in {1}".format(
                         subscriber, mlist_name))
 
             # moderator
@@ -245,7 +254,7 @@ class M3Sync(object):
                         "Add moderator {0} to list {1}".format(moderator, mlist_name))
                     mlist.add_moderator(moderator)
                 except HTTPError:
-                    self.logger.warn(
+                    self.logger.warning(
                         "moderator {0} already exist in {1}".format(moderator, mlist_name))
 
             # owner
@@ -255,26 +264,15 @@ class M3Sync(object):
                         "Add owner {0} to list {1}".format(owner, mlist_name))
                     mlist.add_owner(owner)
                 except HTTPError:
-                    self.logger.warn(
+                    self.logger.warning(
                         "owner {0} already exist in {1}".format(moderator, mlist_name))
 
         # MAILMAN -> LDAP, check for diff then remove when it not exist
         # comparing member, if doesn't exist in ldap data then delete them
         for mlist in domain.lists:
             list_name = mlist.list_name
-            # delete the rest of list if doesn't exist in ldap
+
             if list_name not in ldap_data.keys():
-
-                if self.sync['delete_rest_list'] == 'true':
-
-                    # some are excluded using regex pattern
-                    if self.sync['exclude_list_re'] and re.search(r'{0}'.format(self.sync['exclude_list_re']), mlist.list_name):
-                        continue
-
-                    self.logger.info(
-                        "Deleting list {0}".format(mlist.fqdn_listname))
-                    mlist.delete()
-
                 continue
 
             for member in mlist.members:
@@ -312,4 +310,4 @@ if __name__ == "__main__":
     m3 = M3Sync(
         config=parser
     )
-    #m3.main()
+    m3.main()
