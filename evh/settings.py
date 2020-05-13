@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
-from .settings_local import *
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,6 +27,10 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['account.c.dokucode.de', 'account.my-evh.de']
 
+# We authentificate against LDAP
+AUTHENTICATION_BACKENDS = ["django_auth_ldap.backend.LDAPBackend"]
+
+ACCOUNT_EMAIL_VERIFICATION = "none"
 
 # Application definition
 INSTALLED_APPS = [
@@ -36,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.auth',
+    'django.contrib.admin',
     'django.contrib.staticfiles',
 ]
 
@@ -44,7 +49,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    # 'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -61,6 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
+                'django.contrib.auth.context_processors.auth',
             ],
         },
     },
@@ -72,12 +78,12 @@ WSGI_APPLICATION = 'evh.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
 # 
 # 
 # # Password validation
@@ -102,7 +108,7 @@ WSGI_APPLICATION = 'evh.wsgi.application'
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'de-DE'
 
 TIME_ZONE = 'UTC'
 
@@ -111,6 +117,9 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+LOGIN_URL = '/account/login/'
+LOGIN_REDIRECT_URL = '/account/profile/'
 
 
 # Static files (CSS, JavaScript, Images)
@@ -128,8 +137,8 @@ BOOTSTRAP4 = {
     # Note that a URL can be either a string,
     # e.g. "https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css",
     # or a dict like the default value below.
-    "css_url": "/static/bootstrap-4.1.3/css/bootstrap.min.css",
-    "javascript_url": "/static/bootstrap-4.1.3/js/bootstrap.min.js",
+    "css_url": "/static/bootstrap-4.5.0/css/bootstrap.min.css",
+    "javascript_url": "/static/bootstrap-4.5.0/js/bootstrap.min.js",
     # The complete URL to the Bootstrap CSS file (None means no theme)
     "theme_url": None,
 
@@ -149,7 +158,7 @@ BOOTSTRAP4 = {
 
     # Include jQuery with Bootstrap JavaScript False|falsy|slim|full (default=False)
     # False - means tag bootstrap_javascript use default value - `falsy` and does not include jQuery)
-    'include_jquery': False,
+    'include_jquery': True,
 
     # Label class to use in horizontal forms
     'horizontal_label_class': 'col-md-3',
@@ -195,3 +204,5 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+from .settings_local import *

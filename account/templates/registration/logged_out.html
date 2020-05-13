@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title%}
+Logout
+{% endblock %}
+
+{% block content %}
+  <p>
+    <div class="alert alert-success">
+      <a href="{% url 'index' %}">Du wurdest erfolgreich ausgeloggt</a>
+    </div>
+  </p>
+  
+  <a class="btn btn-primary" href="{% url 'login'%}">Wieder einloggen</a>
+{% endblock %}

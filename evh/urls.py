@@ -20,7 +20,10 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.views.static import serve
 from django.views.decorators.http import require_GET
-
+from django.conf.urls.static import static
+from django.contrib import admin
+import logging
+logger = logging.getLogger(__name__)
 
 # Sorry mum. But somehow this is necessary
 def serve_hull(*args, **kwargs):
@@ -39,9 +42,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path("robots.txt", robots_txt),
     path('account/', include('account.urls')),
-    re_path(r'^static/(?P<path>.*)$', serve_hull),
+    # re_path(r'^static/(?P<path>.*)$', serve_hull),
+    path('admin/', admin.site.urls, name='admin'),
 ]
-
-
-
 

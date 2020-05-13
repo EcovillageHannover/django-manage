@@ -10,6 +10,7 @@ import ldap.modlist
 import passlib.pwd
 from passlib.hash import ldap_md5_crypt
 import logging
+from django.contrib.auth.decorators import login_required
 
 
 
@@ -153,3 +154,10 @@ wir bereits eine kleine Anleitung erstellt haben:
                          "Account wurde erstellt. Du hast eine E-Mail mit dem Passwort erhalten.")
     context['password'] = password
     context['success'] = True
+
+@login_required
+def profile(request):
+    print(request.user.groups.all())
+    return render(request, 'account/profile.html', {
+        'user': request.user
+    })

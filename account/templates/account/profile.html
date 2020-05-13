@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% load bootstrap4 %}
+
+{% block title %}
+Benutzerprofil
+{% endblock %}
+
+
+{% block content %}
+<p>
+  <strong>Benutzername:</strong> {{user.username}}<br/>
+  <strong>Gruppen:</strong> {{user.ldap_user.group_names}}
+</p>
+
+<p>
+  <a class="btn btn-primary" href="{% url 'logout'%}">Logout</a>
+</p>
+{% endblock %}
