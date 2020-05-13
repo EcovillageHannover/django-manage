@@ -41,7 +41,8 @@ def robots_txt(request):
 urlpatterns = [
     path('', views.index, name='index'),
     path("robots.txt", robots_txt),
-    path('account/', include('account.urls')),
+    path('account/', include('account.urls', namespace="account")),
+    path('poll/', include('poll.urls', namespace="poll")),
     # re_path(r'^static/(?P<path>.*)$', serve_hull),
     path('admin/', admin.site.urls, name='admin'),
 ]

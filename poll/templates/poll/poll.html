@@ -1,32 +1,33 @@
-{% extends "poll/base.html" %}
+{% extends "base.html" %}
 
-{% block poll_script %}
+{% block javascript %}
 <script type="text/javascript">
 var vote_url = "{% url 'poll:vote' poll.pk %}";
-var result_url = "{% url "poll:result" poll.pk %}";
-document.addEventListener('DOMContentLoaded', function(){
-    function showResults() {
-        $.get(result_url, function(data) {
-            $("#poll_container").html(data);
-        });
-    }
-    $("#poll_send").click(function() {
-        var item = $('#poll_form input[name=item]:checked').val();
-        if (typeof item === "undefined") {
-            alert("Please,choose  an answer'");
-            return false;
-        }
-        $.get(vote_url, {item: item}, function() {
-            showResults();
-        });
-        return false;
-    });
-});
+  var result_url = "{% url "poll:result" poll.pk %}";
+  $(document).ready(function() {
+      function showResults() {
+          $.get(result_url, function(data) {
+              $("#poll_container").html(data);
+          });
+      }
+      $("#poll_send").click(function() {
+          var item = $('#poll_form input[name=item]:checked').val();
+          if (typeof item === "undefined") {
+              alert("Please,choose  an answer'");
+              return false;
+          }
+          $.get(vote_url, {item: item}, function() {
+              showResults();
+          });
+          return false;
+      });
+  });
 </script>
 {% endblock %}
 
-<div id="poll_container">
-	{% block poll_content %}
+{% block title %} {{ poll.question }}{% endblock %}
+
+{% block content %}
        <div class="poll_style">
     <form method="GET" action="" id="poll_form">
         <div class="poll-title">{{ poll.question }}</div>
@@ -39,11 +40,10 @@ document.addEventListener('DOMContentLoaded', function(){
         <p class="poll_send"><input type="button" class="poll-btn-vote" id="poll_send" value="vote" /></p>
     </form>
 </div>
-	{% endblock %}
-</div>
+{% endblock %}
 
-{% block poll_stylesheet %}
-    <style type="text/css">
+{% block css %}
+<style type="text/css">
 
 .poll_style {
     margin: 0 auto;

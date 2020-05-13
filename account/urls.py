@@ -4,9 +4,9 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth import urls as auth_urls
 
 
-
-
 from . import views
+
+app_name = "account"
 
 urlpatterns = [
     path('create/<str:token>', views.create),

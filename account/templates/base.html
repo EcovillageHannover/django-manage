@@ -21,16 +21,16 @@
           {{user}}
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item" href="{% url 'profile' %}">Benutzerprofil</a>
+          <a class="dropdown-item" href="{% url 'account:profile' %}">Benutzerprofil</a>
           {% if user.is_staff %}
           <a class="dropdown-item" href="{% url 'admin:index' %}">Django-Admin</a>
           {% endif %}
-          <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+          <a class="dropdown-item" href="{% url 'account:logout' %}">Logout</a>
         </div>
   </div>
 
   {% else %}
-  <a class="btn btn-primary" href="{% url 'login'%}">Login</a>
+  <a class="btn btn-primary" href="{% url 'account:login'%}">Login</a>
   {% endif %}
 </nav>
  

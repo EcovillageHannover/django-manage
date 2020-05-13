@@ -3,15 +3,37 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.db.models.manager import Manager
+from django.contrib.auth import get_user_model
 
 import datetime
 
 # Create your models here.
 
+class PollCollection(models.Model):
+    date = models.DateField(default=datetime.date.today)
+    name = models.CharField(max_length=255, unique=True)
+    is_published = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "PollCollection"
+        verbose_name_plural = "PollCollections"
+
+    def __unicode__(self):
+        return self.name
+
+    def __str__(self):
+        return self.name
 
 class Poll(models.Model):
-    date = models.DateField(default=datetime.date.today)
+    poll_collection = models.ForeignKey(PollCollection, on_delete=models.CASCADE)
+
     question = models.CharField(max_length=255, unique=True)
+    description = models.TextField(default="")
+
     is_published = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -61,7 +83,7 @@ class Item(models.Model):
 class Vote(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
     item = models.ForeignKey(Item, verbose_name='voted item', on_delete=models.CASCADE)
-    ip = models.GenericIPAddressField(verbose_name='ip address')
+    user = models.ForeignKey(get_user_model(), verbose_name='voter', on_delete=models.CASCADE)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -71,7 +93,7 @@ class Vote(models.Model):
         verbose_name_plural = "Votes"
 
     def __unicode__(self):
-        return self.ip
+        return self.user.username
 
     def __str__(self):
-        return self.ip
+        return self.user.username

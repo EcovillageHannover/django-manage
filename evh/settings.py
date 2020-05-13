@@ -35,6 +35,7 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 # Application definition
 INSTALLED_APPS = [
     'account',
+    'poll',
     'bootstrap4',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

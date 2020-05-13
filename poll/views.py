@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from .utils import set_cookie
 
 from .models import Poll, Item, Vote
@@ -9,6 +10,7 @@ from .models import Poll, Item, Vote
 # Create your views here.
 
 
+@login_required
 def vote(request, poll_id):
     if request.is_ajax():
 
@@ -29,7 +31,7 @@ def vote(request, poll_id):
 
         Vote.objects.create(
             poll=poll,
-            ip=request.META['REMOTE_ADDR'],
+            user=request.user,
             item=item,
         )
         response = HttpResponse(status=200)
