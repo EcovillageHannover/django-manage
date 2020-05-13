@@ -27,7 +27,6 @@ class PollInline(admin.TabularInline):
     model = Poll
     extra = 0
     fields = (('question', 'poll_type', 'is_published'),)
-    readonly_fields = ('question', 'poll_type')
     show_change_link = True
 
 

@@ -43,7 +43,8 @@ urlpatterns = [
     path("robots.txt", robots_txt),
     path('account/', include('account.urls', namespace="account")),
     path('poll/', include('poll.urls', namespace="poll")),
-    # re_path(r'^static/(?P<path>.*)$', serve_hull),
     path('admin/', admin.site.urls, name='admin'),
 ]
 
+if not settings.DEBUG:
+    urlpatterns.append(re_path(r'^static/(?P<path>.*)$', serve_hull))

@@ -3,3 +3,4 @@ django
 python-ldap
 django-bootstrap4
 django-auth-ldap
+psycopg2
