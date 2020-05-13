@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Umfragen{% endblock %}
+{% block content %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Name</th>
+      <th scope="col">Erstellt</th>
+      <th scope="col">Aktiv?</th>
+    </tr>
+  </thead>
+  <tbody>
+{% for pc in poll_collections %}
+<tr>
+  <td>{{pc.id}}</td>
+  <td><a href="{% url 'poll:view' pc.id %}">{{pc.name}}</a></td>
+  <td>{{pc.created_at}}</a></td>
+  <td>{% if pc.is_active%}Läuft{% else %}Beendet{% endif %}</td>
+</tr>
+{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

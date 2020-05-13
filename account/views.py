@@ -157,7 +157,6 @@ wir bereits eine kleine Anleitung erstellt haben:
 
 @login_required
 def profile(request):
-    print(request.user.groups.all())
     return render(request, 'account/profile.html', {
         'user': request.user
     })

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% load bootstrap4 %}
+
+
+
+{% block title %} {{ poll_collection.name }}{% endblock %}
+
+{% block content %}
+
+{% if not poll_collection.is_active %}
+<div class="alert alert-info">
+  Die Umfrage ist beendet.
+</div>
+{% endif %}
+
+{% for form in forms %}
+<div class="card card-light-bg mb-3">
+  <h3 class="card-header">{{form.instance.question}}</h3>
+  <div class="card-block p-3">
+    <p>{{form.instance.description}}</p>
+
+    <div class="row">
+      <div class="col-md-6">
+        <form method="POST" action="{% url 'poll:vote' form.instance.pk%}">
+          {% csrf_token %}
+          {% bootstrap_form form layout='inline' %}
+          {% if poll_collection.is_active %}
+          {% buttons submit='Abstimmen' reset='Zurücksetzen'%}{% endbuttons %}
+          {% endif %}
+          <input type="hidden" name="next" value="{{ next }}" />
+        </form>
+      </div>
+      <div class="col-md-6">
+       {% if form.results %} {{form.results}} {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

@@ -15,7 +15,7 @@ class PollItemInline(admin.TabularInline):
 
 class PollAdmin(admin.ModelAdmin):
     model = Poll
-    list_display = ('poll_collection', 'question', 'vote_count', 'is_published')
+    list_display = ('poll_collection', 'question', 'poll_type', 'vote_count', 'is_published')
     inlines = [PollItemInline,]
 
 admin.site.register(Poll, PollAdmin)
@@ -26,8 +26,8 @@ admin.site.register(Poll, PollAdmin)
 class PollInline(admin.TabularInline):
     model = Poll
     extra = 0
-    fields = (('question', 'is_published'),)
-    readonly_fields = ('question',)
+    fields = (('question', 'poll_type', 'is_published'),)
+    readonly_fields = ('question', 'poll_type')
     show_change_link = True
 
 
