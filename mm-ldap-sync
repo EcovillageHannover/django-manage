@@ -177,7 +177,8 @@ class M3Sync(object):
             list_data = dict(
                 zip(self.__attrs, [[] for x in range(len(self.__attrs))])
             )
-            list_data.update(self.config.items(f'sync.{list_name}'))
+            list_data['strict_sync'] = self.config.getboolean(f'sync.{list_name}', 'strict_sync')
+            list_data['config'] = dict(self.config.items(f'sync.{list_name}'))
             ldap_data[self.get_list(list_name)] = list_data
 
 
@@ -236,16 +237,38 @@ class M3Sync(object):
                 mlist = self.get_list_byname(domain, list_name)
 
             mlist_name = mlist.fqdn_listname
-            # subscriber
-            for subscriber in datas['subscriber']:
-                try:
-                    self.logger.info("Add subscriber {0} to list {1}".format(
-                        subscriber, mlist_name))
-                    mlist.subscribe(subscriber, pre_verified=True,
-                                    pre_confirmed=True, pre_approved=True)
-                except HTTPError:
-                    self.logger.warning("subscriber {0} already exist in {1}".format(
-                        subscriber, mlist_name))
+
+            # Write some settings
+            save = False
+            for k, v in datas['config'].items():
+                if k in mlist.settings and mlist.settings[k] != v:
+                    self.logger.info(f"Set option {k} on list {mlist_name} to {v}")
+                    mlist.settings[k] = v
+                    save = True
+                    print(f"{k}={v}")
+            if save:
+                mlist.settings.save()
+
+
+            members_mails = set([m.address.email for m in mlist.members])
+
+            def sync(tag, ldap_set, mm_set, add, remove):
+                for element in ldap_set - mm_set:
+                    self.logger.info(f"Add {tag} {element} to list {mlist_name}")
+                    add(element)
+
+                if datas['strict_sync']:
+                    for element in mm_set - ldap_set:
+                        self.logger.info(f"Remove {tag} {element} from list {mlist_name}")
+                        remove(element)
+
+            sync('subscriber', set(datas['subscriber']), members_mails,
+                 add=lambda subscriber: mlist.subscribe(subscriber,
+                                                   pre_verified=True,
+                                                   pre_confirmed=True,
+                                                   pre_approved=True),
+                 remove=lambda subscriber: mlist.unsubscribe(subscriber))
+
 
             # moderator
             for moderator in datas['moderator']:
