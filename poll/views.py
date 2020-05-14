@@ -28,19 +28,22 @@ def poll_collection_view(request, poll_collection_id):
     except:
         return HttpResponse('Wrong parameters', status=400)
 
-    if not pc.visible_for(request.user):
+    if not pc.visible_for(request.user) \
+       and not pc.visible_results_for(request.user):
         return HttpResponse('NotFound', status=404)
 
     poll_forms = []
     for p in Poll.objects.filter(poll_collection=pc):
-        if not p.is_published:
+        # If the result is visible, also the unpublished polls are visible
+        if not pc.visible_results_for(request.user) and not p.is_published:
             continue
         vote = Vote.objects.filter(poll=p, user=request.user)
         poll_forms.append(PollForm(instance=p, votes=vote))
 
     context = {
         'poll_collection': pc,
-        'forms': poll_forms,
+        'poll_forms': poll_forms,
+        'show_results': pc.visible_results_for(request.user),
         'next': request.path, # Come back after voting
     }
 

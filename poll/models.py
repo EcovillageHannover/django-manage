@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 from django.db import models
 from django.db.models.manager import Manager
 from django.contrib.auth import get_user_model
+from django.db.models import Count
+
 
 import datetime
 
@@ -11,6 +13,8 @@ import datetime
 class PollCollection(models.Model):
     date = models.DateField(default=datetime.date.today)
     name = models.CharField(max_length=255, unique=True)
+
+    description = models.TextField(default="",blank=True)
 
     # List of Group Names
     visible         = models.CharField(max_length=255,default="",blank=True)
@@ -39,11 +43,13 @@ class PollCollection(models.Model):
         groups = [g.name for g in user.groups.all()]
         if set(allowed_groups) & set(groups):
             return True
-        if user.usename in groups:
+        if user.username in groups:
             return True
         return False
     
     def visible_for(self, user):
+        if self.visible_results_for(user):
+            return True
         if not self.is_published:
             return False
         return self.__check_acl(self.visible, user)
@@ -85,9 +91,28 @@ class Poll(models.Model):
     def __str__(self):
         return self.question
 
-    def get_vote_count(self):
-        return Vote.objects.filter(poll=self).count()
-    vote_count = property(fget=get_vote_count)
+    @property
+    def is_text(self):
+        return self.poll_type == Poll.TEXT
+    
+    @property
+    def items(self):
+        _items = Item.objects.filter(poll=self)
+        return reversed(sorted(_items, key=lambda i: i.position))
+
+    @property
+    def results(self):
+        return [(item, int(item.vote_count/float(self.vote_count)*100)) for item in self.items]
+
+    @property
+    def votes(self):
+        return Vote.objects \
+                   .filter(poll=self)
+
+    @property
+    def vote_count(self):
+        return self.votes.aggregate(votes=Count('user', distinct=True))['votes']
+
 
 class Item(models.Model):
     value = models.CharField(max_length=255, unique=True)
@@ -107,9 +132,9 @@ class Item(models.Model):
     def __str__(self):
         return self.value
 
-    def get_vote_count(self):
+    @property
+    def vote_count(self):
         return Vote.objects.filter(item=self).count()
-    vote_count = property(fget=get_vote_count)
 
 
 class Vote(models.Model):
