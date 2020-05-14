@@ -9,15 +9,17 @@ class PollForm(forms.ModelForm):
         model = Poll
         fields = []
 
-    def __init__(self, *args, votes=[], **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
+        self.votes = Vote.objects.filter(poll=self.instance, user=user)
 
         self.results = None
 
         if self.instance.poll_type == Poll.TEXT:
             self.fields['text'] = forms.CharField(widget=forms.Textarea)
             self.initial['text'] = ""
-            for vote in votes:
+            for vote in self.votes:
                 self.initial['text'] += vote.text
         else:
             self.choices = []
@@ -30,14 +32,18 @@ class PollForm(forms.ModelForm):
                     choices=self.choices,
                     widget=forms.RadioSelect
                 )
-                if len(votes) > 0:
-                    self.initial['choice'] = votes[0].item.pk
+                if len(self.votes) > 0:
+                    self.initial['choice'] = self.votes[0].item.pk
             else:
                 self.fields['choices'] = forms.MultipleChoiceField(
                     choices=self.choices,
                     widget=forms.CheckboxSelectMultiple
                 )
-                self.initial['choices'] = [v.item.pk for v in votes]
+                self.initial['choices'] = [v.item.pk for v in self.votes]
+
+    @property
+    def user_voted(self):
+        return any([v.user == self.user for v in self.votes])
 
     def clean_choice(self):
         data = self.cleaned_data['choice']

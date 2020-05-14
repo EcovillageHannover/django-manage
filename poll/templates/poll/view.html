@@ -33,7 +33,11 @@
 
 {% for form in poll_forms %}
     <div class="card card-light-bg mb-3">
-      <h3 class="card-header">{% if not form.instance.is_published %}<span class="badge badge-secondary">Unsichtbar</span> {% endif %}{{form.instance.question}}</h3>
+      <h3 class="card-header">
+        {{form.instance.question}}
+        {% if not form.instance.is_published %}<span class="float-right badge badge-secondary">Unsichtbar</span> {% endif %}
+        {% if form.user_voted %}<span class="float-right badge badge-info">Abgestimmt</span> {% endif %}
+      </h3>
       <div class="card-block p-3">
         <p>{{form.instance.description}}</p>
 
@@ -43,13 +47,12 @@
               {% csrf_token %}
               {% bootstrap_form form layout='inline' %}
               {% if poll_collection.is_active and form.instance.is_published %}
-                {% buttons submit='Abstimmen' reset='Zurücksetzen'%}{% endbuttons %}
+                {% buttons submit='Abstimmen' %}{% endbuttons %}
               {% endif %}
               <input type="hidden" name="next" value="{{ next }}" />
             </form>
           </div>
           <div class="col-md-6 poll-result">
-            <div class="total_votes">Stimmen: <b>{{ form.instance.vote_count }}</b></div><br>
             {% if show_results and not form.instance.is_text %}
 	      {% for item, percent in form.instance.results %}
 	        <li>{{ item.value }}<br/>
@@ -61,6 +64,7 @@
 	        </li>
 	      {% endfor %}
             {% endif %}
+            <div class="total_votes">Stimmen: <b>{{ form.instance.vote_count }}</b></div><br>
           </div>
           {% if show_results and form.instance.is_text %}
             {% for vote in form.instance.votes %}
