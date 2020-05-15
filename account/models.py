@@ -33,9 +33,9 @@ def make_username(vorname, nachname):
 
 
 def ldap_users(config):
-    conn = ldap.initialize(config.ldap_host)
-    conn.simple_bind_s(config.ldap_user, config.ldap_password)
-    ret = conn.search_s(config.ldap_user_dn,
+    conn = ldap.initialize(config.AUTH_LDAP_SERVER_URI)
+    conn.simple_bind_s(config.AUTH_LDAP_BIND_DN, config.AUTH_LDAP_BIND_PASSWORD)
+    ret = conn.search_s(config.AUTH_LDAP_USER_DN,
                       ldap.SCOPE_SUBTREE,
                       "(objectClass=inetOrgPerson)",
                       ["cn", "mail", "displayName", 'memberOf']

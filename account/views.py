@@ -74,9 +74,8 @@ def create(request, token=None):
 
 
 def __create(request, context, vorname, nachname, username, mail):
-    conn = ldap.initialize(config.ldap_host)
-    conn.simple_bind_s(config.ldap_user, config.ldap_password)
-
+    conn = ldap.initialize(config.AUTH_LDAP_SERVER_URI)
+    conn.simple_bind_s(config.AUTH_LDAP_BIND_DN, config.AUTH_LDAP_BIND_PASSWORD)
 
     #note salt generation is automatically handled
     password = passlib.pwd.genword()
@@ -85,7 +84,7 @@ def __create(request, context, vorname, nachname, username, mail):
 
     ################################################################
     # LDAP Account
-    dn = f"cn={username},{config.ldap_user_dn}"
+    dn = f"cn={username},{config.AUTH_LDAP_USER_DN}"
     entry = {
         'objectClass': [b'inetOrgPerson'],
         'cn': [username.encode()],
@@ -112,6 +111,7 @@ def __create(request, context, vorname, nachname, username, mail):
         context['success'] = False
         return
 
+
     ################################################################
     # Mail versenden
     try:
@@ -119,8 +119,9 @@ def __create(request, context, vorname, nachname, username, mail):
         '[EVH Account] Accountinformationen',
         f"""Hallo {vorname} {nachname},
 
-dein Account wurde erfolgreich angelegt. Die Zugangsdaten zu diesem
-Account, den du für alle Webdienste des ecovillage nutzen kannst, sind:
+für dich wurde erfolgreich ein ecovillage hannover Account angelegt.
+Die Zugangsdaten zu diesem Account, den du für alle Webdienste des
+ecovillage nutzen kannst, sind:
 
   Benutzername: {username}
   Passwort: {password}
