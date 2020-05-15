@@ -2,11 +2,18 @@
 {% extends "base.html" %}
 
 {% load bootstrap4 %}
+{% load markdownify %}
 
 {% block title %} {{ poll_collection.name }}{% endblock %}
 
 {% block content %}
-
+  
+  {% if can_change %}
+    <a href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
+      <span class="float-right btn btn-danger">Umfrage bearbeiten</span>
+    </a>
+  {% endif %}
+  
 {% if not poll_collection.is_published %}
 <div class="alert alert-danger">
   Die Umfrage ist unsichtbar.
@@ -21,62 +28,89 @@
 
 
 
-{% autoescape off %}
-  <p>
-    {{ poll_collection.description }}
-  </p>
-{% endautoescape %}
-
-<p><em>Hinweis:</em> Dies ist <strong>keine</strong> geheime Umfrage.
-  Die zusammengefassten Ergebnisse und die Freitextkommentare sind für die Nutzer <em>{{poll_collection.visible_results}}</em> sichtbar.
+<p class="w-80">
+  {{ poll_collection.description | markdownify }}
 </p>
 
-{% for form in poll_forms %}
-    <div class="card card-light-bg mb-3">
-      <h3 class="card-header">
-        {{form.instance.question}}
-        {% if not form.instance.is_published %}<span class="float-right badge badge-secondary">Unsichtbar</span> {% endif %}
-        {% if form.user_voted %}<span class="float-right badge badge-info">Abgestimmt</span> {% endif %}
-      </h3>
-      <div class="card-block p-3">
-        <p>{{form.instance.description}}</p>
+<p>
+<form method="GET" action="{% url 'poll:view' poll_collection.pk %}">
+  <div class="row p-4">
+    <input type="hidden" name="tag" value="{{ search_tag }}"/>
+    <input type="text" class="col-sm-5 form-control" id="q" name="q" value="{{search_q}}"/>
+    <div class="col-sm-1">
+      <button type="submit" class="btn btn-primary">Los</button>
+    </div>
+    <div class="col-sm-6">
+      <span class="float-right">
+        Schlagwörter-Filter:
+        {% if search_tag %}
+          <a href="?q={{search_q}}" class="btn btn-danger">{{search_tag}} (X)</a>
+        {% endif %}
+      </span>
+    </div>
+  </div>
+</form>
+</span>
+</p>
 
-        <div class="row">
-          <div class="col-md-6">
-            <form method="POST" action="{% url 'poll:vote' form.instance.pk %}">
-              {% csrf_token %}
-              {% bootstrap_form form layout='inline' %}
-              {% if poll_collection.is_active and form.instance.is_published %}
-                {% buttons submit='Abstimmen' %}{% endbuttons %}
-              {% endif %}
-              <input type="hidden" name="next" value="{{ next }}" />
-            </form>
-          </div>
-          <div class="col-md-6 poll-result">
-            {% if show_results and not form.instance.is_text %}
-	      {% for item, percent in form.instance.results %}
-	        <li>{{ item.value }}<br/>
-                  <div class="progress">
-                    <div class="progress-bar w-{{percent}}" role="progressbar"  aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100">
-                      {{percent}}%
-                    </div>
-                  </div>
-	        </li>
-	      {% endfor %}
-            {% endif %}
-            <div class="total_votes">Stimmen: <b>{{ form.instance.vote_count }}</b></div><br>
-          </div>
-          {% if show_results and form.instance.is_text %}
-            {% for vote in form.instance.votes %}
-              <div>
-                <strong>Nutzer:</strong> {{vote.text | escape}}
-              </div>
-              <hr/>
-            {% endfor %}
-          {% endif %}
+{% if not poll_forms %}
+  <p><em>Keine Fragen für die gegebenen Kriterien gefunden.</em></p>
+{% endif %}
+
+{% for form in poll_forms %}
+  <div class="card card-light-bg mb-3">
+    <h3 class="card-header">
+      {{form.instance.question}}
+      <span class="float-right">
+        {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
+        {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
+        {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
+      </span>
+    </h3>
+    <div class="card-block p-3">
+      <div class="row mb-3">
+        <div class="col-md-9">{{form.instance.description | markdownify }}</div>
+        <div class="col-md-3">
+          <span class="float-right">Schlagworte: {% for tag in form.instance.tags.names %}
+            <a href="?tag={{tag}}&q={{search_q}}" class="badge {% if search_tag == tag %}badge-danger{% else %}badge-secondary{% endif %}">{{tag}}</a> {%endfor%}
+          </span>
         </div>
       </div>
+      <div class="row">
+        <div class="col-md-6">
+          <form method="POST" action="{% url 'poll:vote' form.instance.pk %}">
+            {% csrf_token %}
+            {% bootstrap_form form layout='inline' %}
+            {% if can_vote and poll_collection.is_active and form.instance.is_published %}
+              {% buttons submit='Abstimmen' %}{% endbuttons %}
+            {% endif %}
+            <input type="hidden" name="next" value="{{ next }}" />
+          </form>
+        </div>
+        <div class="col-md-6 poll-result">
+          {% if can_analyze and not form.instance.is_text %}
+	    {% for item, percent in form.instance.results %}
+	      <li>{{ item.value }}<br/>
+                <div class="progress mb-2">
+                  <div class="progress-bar w-{{percent}}" role="progressbar"  aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100">
+                    {{percent}}%
+                  </div>
+                </div>
+	      </li>
+	    {% endfor %}
+          {% endif %}
+          <div class="total_votes">Stimmen: <b>{{ form.instance.vote_count }}</b></div><br>
+        </div>
+        {% if can_analyze and form.instance.is_text %}
+          {% for vote in form.instance.votes %}
+            <p>
+              <strong>Nutzer:</strong> {{vote.text | escape}}
+            </p>
+          {% endfor %}
+        {% endif %}
+      </div>
     </div>
+  </div>
 {% endfor %}
 {% endblock %}
 

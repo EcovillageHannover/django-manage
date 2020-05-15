@@ -6,6 +6,8 @@ from django.db.models.manager import Manager
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 
+from taggit.managers import TaggableManager
+
 
 import datetime
 
@@ -27,8 +29,12 @@ class PollCollection(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "PollCollection"
-        verbose_name_plural = "PollCollections"
+        verbose_name = "Umfrage"
+        verbose_name_plural = "Umfragen"
+        permissions = (
+            ('vote_pollcollection',    'Umfrage abstimmen'),
+            ('analyze_pollcollection', 'Umfrage auswerten'),
+        )
 
     def __unicode__(self):
         return self.name
@@ -36,26 +42,19 @@ class PollCollection(models.Model):
     def __str__(self):
         return self.name
 
-    def __check_acl(self, rights, user):
-        if rights == "":
-            return True
-        allowed_groups = [x.strip() for x in rights.split(",")]
-        groups = [g.name for g in user.groups.all()]
-        if set(allowed_groups) & set(groups):
-            return True
-        if user.username in groups:
-            return True
-        return False
-    
-    def visible_for(self, user):
-        if self.visible_results_for(user):
-            return True
-        if not self.is_published:
-            return False
-        return self.__check_acl(self.visible, user)
+    def can_view(self, user):
+        return user.has_perm('view_pollcollection', self) \
+            or user.has_perm('vote_pollcollection', self)
 
-    def visible_results_for(self, user):
-        return self.__check_acl(self.visible_results or self.visible, user)
+    def can_vote(self, user):
+        return user.has_perm('vote_pollcollection', self)
+
+    def can_analyze(self, user):
+        return user.has_perm('analyze_pollcollection', self)
+
+    def can_change(self, user):
+        return user.has_perm('change_pollcollection', self)
+
 
 class Poll(models.Model):
     poll_collection = models.ForeignKey(PollCollection, on_delete=models.CASCADE)
@@ -64,9 +63,9 @@ class Poll(models.Model):
     CHECKBOX = 'CE'
     TEXT = 'TX'
     TYPE_CHOICES = (
-        (RADIO, 'Radiobox'),
-        (CHECKBOX, 'Checkbox'),
-        (TEXT, 'Free Text')
+        (RADIO, 'Einfachauswahl'),
+        (CHECKBOX, 'Mehrfachauswahl'),
+        (TEXT, 'Freitext')
     )
 
     poll_type = models.CharField(max_length=2,
@@ -81,9 +80,11 @@ class Poll(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    tags = TaggableManager()
+
     class Meta:
-        verbose_name = "Poll"
-        verbose_name_plural = "Polls"
+        verbose_name = "Frage"
+        verbose_name_plural = "Fragen"
 
     def __unicode__(self):
         return self.question
@@ -123,8 +124,8 @@ class Item(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Answer"
-        verbose_name_plural = "Answers"
+        verbose_name = "Antwort"
+        verbose_name_plural = "Antworten"
 
     def __unicode__(self):
         return self.value

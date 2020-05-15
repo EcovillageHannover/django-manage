@@ -3,4 +3,7 @@ django
 python-ldap
 django-bootstrap4
 django-auth-ldap
+django-guardian
+django-markdownify
+django-taggit
 psycopg2

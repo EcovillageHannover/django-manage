@@ -15,6 +15,7 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+BASE_URL = "http://localhost/"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
@@ -28,7 +29,7 @@ DEBUG = False
 ALLOWED_HOSTS = ['account.c.dokucode.de', 'account.my-evh.de']
 
 # We authentificate against LDAP
-AUTHENTICATION_BACKENDS = ["django_auth_ldap.backend.LDAPBackend"]
+AUTHENTICATION_BACKENDS = ["django_auth_ldap.backend.LDAPBackend", 'guardian.backends.ObjectPermissionBackend']
 
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
@@ -37,6 +38,9 @@ INSTALLED_APPS = [
     'account',
     'poll',
     'bootstrap4',
+    'markdownify',
+    'guardian',
+    'taggit',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -121,6 +125,9 @@ USE_TZ = True
 
 LOGIN_URL = '/account/login/'
 LOGIN_REDIRECT_URL = '/account/profile/'
+
+
+TAGGIT_CASE_INSENSITIVE = True
 
 
 # Static files (CSS, JavaScript, Images)

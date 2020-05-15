@@ -16,7 +16,7 @@ from .forms import *
 @login_required
 def poll_collection_list(request):
     pc = PollCollection.objects.all()
-    pc = [p for p in pc if p.visible_for(request.user)]
+    pc = [p for p in pc if p.can_view(request.user)]
     pc = sorted(pc, key=lambda p: (not p.is_active, p.created_at))
     context = {"poll_collections": pc}
     return render(request, "poll/list.html", context)
@@ -28,20 +28,55 @@ def poll_collection_view(request, poll_collection_id):
     except:
         return HttpResponse('Wrong parameters', status=400)
 
-    if not pc.visible_for(request.user):
+    if not pc.can_view(request.user):
         return HttpResponse('NotFound', status=404)
+
+    search_q = request.GET.get('q','')
+    search_tag = request.GET.get('tag','')
+    search_p = request.GET.get('p','')
+
+    terms = [x.strip() for x in search_q.split()]
+
+    # Tag Autodetection
+    available_tags = set()
+    for p in Poll.objects.filter(poll_collection=pc):
+        available_tags.update(p.tags.names())
+
+    if not search_tag and (set(terms) & available_tags):
+        search_tag = list(set(terms) & available_tags)[0]
+        terms.remove(search_tag)
+        search_q = " ".join(terms)
 
     poll_forms = []
     for p in Poll.objects.filter(poll_collection=pc):
         # If the result is visible, also the unpublished polls are visible
-        if not pc.visible_results_for(request.user) and not p.is_published:
+        if not pc.can_change(request.user) and not p.is_published:
             continue
+
+        if search_tag and search_tag not in p.tags.names():
+            continue
+
+        if search_p and int(search_p) != p.pk:
+            continue
+
+        if search_q:
+            for term in terms:
+                if term in (p.question + p.description):
+                    break
+            else:
+                continue
+
         poll_forms.append(PollForm(instance=p, user=request.user))
 
     context = {
         'poll_collection': pc,
         'poll_forms': poll_forms,
-        'show_results': pc.visible_results_for(request.user),
+        'search_q':    search_q,
+        'search_tag':  search_tag,
+        'can_view':    pc.can_view(request.user),
+        'can_vote':    pc.can_vote(request.user),
+        'can_analyze': pc.can_analyze(request.user),
+        'can_change':  pc.can_change(request.user),
         'next': request.path, # Come back after voting
     }
 
@@ -55,7 +90,7 @@ def vote(request, poll_id):
     except Poll.DoesNotExist:
         return HttpResponse('Wrong parameters', status=400)
 
-    if not poll.poll_collection.visible_for(request.user):
+    if not poll.poll_collection.can_vote(request.user):
         return HttpResponse('NotFound', status=404)
 
     if not poll.poll_collection.is_active:
@@ -69,7 +104,7 @@ def vote(request, poll_id):
         if form.is_valid():
             form.save(request.user)
             messages.add_message(request, messages.SUCCESS,
-                                 "Deine Stimme wurde gespeichert.")
+                                 f"Deine Stimme für '{poll}' wurde gespeichert.")
 
             return HttpResponseRedirect(request.POST['next'])
 
