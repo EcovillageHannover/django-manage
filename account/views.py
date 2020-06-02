@@ -1,6 +1,8 @@
 # coding: utf-8
 
+from django_auth_ldap.backend import LDAPBackend
 from django.http import HttpResponse
+from django.contrib.auth import authenticate, login
 from django.shortcuts import render
 from django.template import loader
 from django.contrib import messages
@@ -13,6 +15,7 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
+from django.template.loader import render_to_string
 
 
 import evh.settings as config
@@ -116,35 +119,29 @@ def __create(request, context, vorname, nachname, username, mail):
 
 
     ################################################################
+    # Login user
+    user = authenticate(username=username, password=password)
+    login(request, user)
+
+    ################################################################
     # Mail versenden
     try:
-        send_mail(
-        '[EVH Account] Accountinformationen',
-        f"""Hallo {vorname} {nachname},
-
-für dich wurde erfolgreich ein ecovillage hannover Account angelegt.
-Die Zugangsdaten zu diesem Account, den du für alle Webdienste des
-ecovillage nutzen kannst, sind:
-
-  Benutzername: {username}
-  Passwort: {password}
-
-Eine ausführliche Übersicht über all unsere Dienste findest du unter:
-
-  https://account.my-evh.de
-
-Die erste Anlaufstelle nach der Anmeldung, bei der du direkt mit
-anderen Engagierten in Kontakt treten kannst ist unser Chat, für den
-wir bereits eine kleine Anleitung erstellt haben:
-
-  Anleitung:  https://account.my-evh.de/static/matrix-anleitung.pdf
-  Chat:       https://chat.my-evh.de
-
--- Team Digitales""",
-            config.EMAIL_FROM,
-            [mail],
-            fail_silently=False,
+        c = dict(
+            reason='create',
+            vorname=vorname,
+            nachname=nachname,
+            username=username,
+            user=user,
+            password=password
         )
+
+        msg_plain = render_to_string('registration/account_info.txt', c)
+
+        send_mail("[EVH Account] Account angelegt",
+                  msg_plain,
+                  config.EMAIL_FROM,
+                  [mail],
+                  fail_silently=False)
     except Exception as e:
         messages.add_message(request, messages.ERROR,
                              f"Versenden der Passwort-Mail ist fehlgeschlagen: {e}")
@@ -156,8 +153,13 @@ wir bereits eine kleine Anleitung erstellt haben:
 
     messages.add_message(request, messages.SUCCESS,
                          "Account wurde erstellt. Du hast eine E-Mail mit dem Passwort erhalten.")
+
+
     context['password'] = password
     context['success'] = True
+
+
+    
 
 
 def password_reset(request, uidb64, token):
@@ -165,12 +167,55 @@ def password_reset(request, uidb64, token):
     uid = urlsafe_base64_decode(uidb64).decode()
     user = UserModel._default_manager.get(pk=uid)
     token_generator = default_token_generator
+    user = LDAPBackend().populate_user(user.username)
 
+    if not user:
+        return HttpResponse("Kein bekannter Benutzer")
+
+    context = dict(
+        reason='password_reset',
+        vorname=user.ldap_user.attrs['givenName'][0],
+        nachname=user.ldap_user.attrs['sn'][0],
+        username=user.username,
+        user=user
+    )
     if not token_generator.check_token(user, token):
-        return HttpResponse("Invalides Passwort Reset Token")
+        messages.add_message(request, messages.INFO,
+                             "Passwort-Reset-Link bereits verbraucht")
 
-    return HttpResponse("To be implemented")
+        if not request.user:
+            return HttpResponse("Invalid Request. (43)")
+    else:
+        # Establish 
+        conn = ldap.initialize(config.AUTH_LDAP_SERVER_URI)
+        conn.simple_bind_s(config.AUTH_LDAP_BIND_DN, config.AUTH_LDAP_BIND_PASSWORD)
 
+        #note salt generation is automatically handled
+        password = passlib.pwd.genword()
+        password_hash = ldap_md5_crypt.encrypt(password).encode('utf-8')
+
+        modlist = [(ldap.MOD_REPLACE, 'userPassword', [password_hash] )]
+
+        logger.info(f"reset/LDAP: changed to {user.ldap_user.dn}")
+        conn.modify_s(user.ldap_user.dn, modlist)
+
+
+        context['password'] = password
+
+        msg_plain = render_to_string('registration/account_info.txt', context)
+        send_mail("[EVH Account] Neues Passwort",
+                  msg_plain,
+                  config.EMAIL_FROM,
+                  [user.email],
+                  fail_silently=False)
+        
+        user = authenticate(username=user.username, password=password)
+        login(request, user)
+
+        messages.add_message(request, messages.SUCCESS,
+                             "Passwort erfolgreich zurückgesetzt.")
+
+    return render(request, 'registration/password_reset_success.html', context)
 
 
 

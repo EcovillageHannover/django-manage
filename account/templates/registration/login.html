@@ -23,7 +23,10 @@ LDAP Login
   <form method="post" action="{% url 'account:login' %}">
     {% csrf_token %}
     {% bootstrap_form form layout='inline' %}
-    {% buttons submit='Login' reset='Cancel'%}{% endbuttons %}
+    {% buttons submit='Anmelden' %}
+    <a class="float-right btn btn-primary" href="{% url 'account:password_reset'%}">Passwort vergessen</a>
+    {% endbuttons %}
+    
     <input type="hidden" name="next" value="{{ next }}" />
   </form>
   

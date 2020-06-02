@@ -9,6 +9,7 @@
 
 {% block content %}
   <div class="row">
+    {% if not user.is_authenticated %}
     <div class="col-sm-4">
     <div class="card card-light-bg">
       <h3 class="card-header">Account</h3>
@@ -19,6 +20,7 @@
       </div>
     </div>
     </div>
+    {% endif %}
     <div class="col-sm-4">
     <div class="card card-light-bg">
       <h3 class="card-header">Webchat</h3>

@@ -1,0 +1,21 @@
+Hallo {{vorname}} {{nachname}},
+
+{% if reason == 'create' %}für dich wurde erfolgreich ein ecovillage hannover Account angelegt.{% else %}wir haben das Passwort für deinen EVH Account zurückgesetzt.{% endif %}
+Die Zugangsdaten zu diesem Account, den du für alle Webdienste des
+ecovillage nutzen kannst, sind:
+
+  Benutzername: {{username}}
+  Passwort: {{password}}
+
+Eine ausführliche Übersicht über all unsere Dienste findest du unter:
+
+  https://account.my-evh.de
+
+Die erste Anlaufstelle nach der Anmeldung, bei der du direkt mit
+anderen Engagierten in Kontakt treten kannst ist unser Chat, für den
+wir bereits eine kleine Anleitung erstellt haben:
+
+  Anleitung:  https://account.my-evh.de/static/matrix-anleitung.pdf
+  Chat:       https://chat.my-evh.de
+
+-- Team Digitales
