@@ -12,18 +12,25 @@
 
   <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
     <div class="navbar-nav">
-      <a class="nav-item nav-link active" href="/">Home <span class="sr-only">(current)</span></a>
+      <a class="nav-item nav-link active" href="{% url 'poll:list' %}">Umfragen <span class="sr-only">(current)</span></a>
     </div>
   </div>
   {% if user.is_authenticated %}
   <div class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          {{user}}
+      {% if user.is_impersonate %}
+        {{ request.user }} ({{ request.impersonator }})
+      {% else %}
+        {{user}}
+      {% endif %}
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
           <a class="dropdown-item" href="{% url 'account:profile' %}">Benutzerprofil</a>
           {% if user.is_staff %}
-          <a class="dropdown-item" href="{% url 'admin:index' %}">Django-Admin</a>
+            <a class="dropdown-item" href="{% url 'admin:index' %}">Django-Admin</a>
+          {% endif %}
+          {% if user.is_impersonate %}
+            <a class="dropdown-item" href="/impersonate/stop?next={{request.get_full_path | urlencode}}">Stop Impersonating</a>
           {% endif %}
           <a class="dropdown-item" href="{% url 'account:logout' %}">Logout</a>
         </div>

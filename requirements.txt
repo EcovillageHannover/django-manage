@@ -6,4 +6,5 @@ django-auth-ldap
 django-guardian
 django-markdownify
 django-taggit
+django-impersonate
 psycopg2

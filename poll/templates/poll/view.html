@@ -10,7 +10,7 @@
   
   {% if can_change %}
     <a href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
-      <span class="float-right btn btn-danger">Umfrage bearbeiten</span>
+      <span class="float-right btn btn-danger">Bearbeiten</span>
     </a>
   {% endif %}
   
@@ -42,10 +42,20 @@
     </div>
     <div class="col-sm-6">
       <span class="float-right">
-        Schlagwörter-Filter:
-        {% if search_tag %}
-          <a href="?q={{search_q}}" class="btn btn-danger">{{search_tag}} (X)</a>
+        {% if available_tags %}
+          Schlagwörter-Filter:
+          {% for tag in available_tags%}
+            {% if tag == search_tag %}
+              <a href="?q={{search_q}}" class="mb-2 btn btn-warning">{{tag}} (x)</a>
+            {% else %}
+              <a href="?q={{search_q}}&tag={{tag}}" class="mb-2 btn btn-secondary">{{tag}}</a>
+            {% endif %}
+          {% endfor %}
         {% endif %}
+        {% if search_p %}
+          <a href="?search_p=" class="btn btn-warning">Alle anzeigen</a>
+        {% endif %}
+
       </span>
     </div>
   </div>
@@ -71,9 +81,11 @@
       <div class="row mb-3">
         <div class="col-md-9">{{form.instance.description | markdownify }}</div>
         <div class="col-md-3">
+          {% if form.instance.tags.names %}
           <span class="float-right">Schlagworte: {% for tag in form.instance.tags.names %}
-            <a href="?tag={{tag}}&q={{search_q}}" class="badge {% if search_tag == tag %}badge-danger{% else %}badge-secondary{% endif %}">{{tag}}</a> {%endfor%}
+            <a href="?tag={{tag}}&q={{search_q}}" class="badge {% if search_tag == tag %}badge-warning{% else %}badge-secondary{% endif %}">{{tag}}</a> {%endfor%}
           </span>
+          {% endif %}
         </div>
       </div>
       <div class="row">
@@ -82,7 +94,7 @@
             {% csrf_token %}
             {% bootstrap_form form layout='inline' %}
             {% if can_vote and poll_collection.is_active and form.instance.is_published %}
-              {% buttons submit='Abstimmen' %}{% endbuttons %}
+               {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-info" %}
             {% endif %}
             <input type="hidden" name="next" value="{{ next }}" />
           </form>
@@ -90,12 +102,14 @@
         <div class="col-md-6 poll-result">
           {% if can_analyze and not form.instance.is_text %}
 	    {% for item, percent in form.instance.results %}
-	      <li>{{ item.value }}<br/>
-                <div class="progress mb-2">
-                  <div class="progress-bar w-{{percent}}" role="progressbar"  aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100">
-                    {{percent}}%
+	      <li>{{ item.value }} <span class="float-right"><em>({{item.vote_count}} Stimmen)</em></span><br/>
+                {% if form.instance.show_percent %}
+                  <div class="progress mb-2">
+                    <div class="progress-bar bg-info w-{{percent}}" role="progressbar"  aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100">
+                      {{percent}}% 
+                    </div>
                   </div>
-                </div>
+                {% endif %}
 	      </li>
 	    {% endfor %}
           {% endif %}

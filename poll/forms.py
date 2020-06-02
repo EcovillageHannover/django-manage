@@ -3,6 +3,9 @@
 from django import forms
 from .models import Poll, Item, Vote, PollCollection
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class PollForm(forms.ModelForm):
     class Meta:
@@ -32,7 +35,7 @@ class PollForm(forms.ModelForm):
                     choices=self.choices,
                     widget=forms.RadioSelect
                 )
-                if len(self.votes) > 0:
+                if len(self.votes) > 0 and self.votes[0].item:
                     self.initial['choice'] = self.votes[0].item.pk
             else:
                 self.fields['choices'] = forms.MultipleChoiceField(

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'markdownify',
     'guardian',
     'taggit',
+    'impersonate',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -57,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'impersonate.middleware.ImpersonateMiddleware',
 ]
 
 ROOT_URLCONF = 'evh.urls'
@@ -212,5 +214,14 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+IMPERSONATE = {
+    'REDIRECT_URL': '/some-path/',
+    'PAGINATE_COUNT': 10,
+    'URI_EXCLUSIONS': tuple(),
+    'REDIRECT_FIELD_NAME': 'next',
+    'REDIRECT_URL': '/',
+}
+
 
 from .settings_local import *

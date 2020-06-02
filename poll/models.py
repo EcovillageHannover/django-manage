@@ -18,10 +18,6 @@ class PollCollection(models.Model):
 
     description = models.TextField(default="",blank=True)
 
-    # List of Group Names
-    visible         = models.CharField(max_length=255,default="",blank=True)
-    visible_results = models.CharField(max_length=255,default="",blank=True)
-
     is_published = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
 
@@ -57,7 +53,8 @@ class PollCollection(models.Model):
 
 
 class Poll(models.Model):
-    poll_collection = models.ForeignKey(PollCollection, on_delete=models.CASCADE)
+    poll_collection = models.ForeignKey(PollCollection, on_delete=models.CASCADE,
+                                        related_name = 'polls')
 
     RADIO = 'RA'
     CHECKBOX = 'CE'
@@ -70,17 +67,20 @@ class Poll(models.Model):
 
     poll_type = models.CharField(max_length=2,
                                  choices=TYPE_CHOICES,
-                                 default=RADIO) 
+                                 default=RADIO)
 
     question = models.CharField(max_length=255, unique=True)
     description = models.TextField(default="")
 
     is_published = models.BooleanField(default=True)
 
+    show_percent = models.BooleanField(default=True)
+
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    tags = TaggableManager()
+    tags = TaggableManager(blank=True)
 
     class Meta:
         verbose_name = "Frage"
@@ -103,7 +103,15 @@ class Poll(models.Model):
 
     @property
     def results(self):
-        return [(item, int(item.vote_count/float(self.vote_count)*100)) for item in self.items]
+        ret = []
+        for item in self.items:
+            count = self.vote_count
+            if count > 0:
+                percent = int(item.vote_count / float(count) * 100)
+            else:
+                percent = 0.0
+            ret += [(item, percent)]
+        return ret
 
     @property
     def votes(self):
@@ -136,6 +144,7 @@ class Item(models.Model):
     @property
     def vote_count(self):
         return Vote.objects.filter(item=self).count()
+
 
 
 class Vote(models.Model):

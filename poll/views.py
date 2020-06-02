@@ -22,6 +22,7 @@ def poll_collection_list(request):
     return render(request, "poll/list.html", context)
 
 
+@login_required
 def poll_collection_view(request, poll_collection_id):
     try:
         pc = PollCollection.objects.get(pk=poll_collection_id)
@@ -42,7 +43,7 @@ def poll_collection_view(request, poll_collection_id):
     for p in Poll.objects.filter(poll_collection=pc):
         available_tags.update(p.tags.names())
 
-    if not search_tag and (set(terms) & available_tags):
+    if set(terms) & available_tags:
         search_tag = list(set(terms) & available_tags)[0]
         terms.remove(search_tag)
         search_q = " ".join(terms)
@@ -72,7 +73,9 @@ def poll_collection_view(request, poll_collection_id):
         'poll_collection': pc,
         'poll_forms': poll_forms,
         'search_q':    search_q,
+        'search_p':    search_p,
         'search_tag':  search_tag,
+        'available_tags': sorted(available_tags),
         'can_view':    pc.can_view(request.user),
         'can_vote':    pc.can_vote(request.user),
         'can_analyze': pc.can_analyze(request.user),
