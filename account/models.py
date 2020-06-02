@@ -6,6 +6,23 @@ import hashlib
 import ldap
 # Create your models here.
 
+from django.db import models
+from django.db.models.manager import Manager
+from django.contrib.auth import get_user_model
+from django.db.models import Count
+
+from taggit.managers import TaggableManager
+
+import datetime
+
+# Create your models here.
+class Invite(models.Model):
+    md5 = models.CharField(max_length=255, primary_key=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    count = models.IntegerField(default=0)
+
+
 def format_token(key, fields):
     payload = ("|".join(fields)).encode('utf-8')
     signature = hmac.new(key.encode(), payload, digestmod=hashlib.md5).digest()

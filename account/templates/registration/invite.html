@@ -1,0 +1,21 @@
+<p>Hallo {{vorname}} {{nachname}},</p>
+{% if preface %}
+<p>{{preface}}</p>
+{% endif %}
+<p>
+  Diese Mail enthält alle nötigen Daten um einen Account beim ecovillage hannover zu erstellen. Wenn du einen Account erstellen möchtest, dann
+</p>
+<p>
+  <a href="{{url}}">Klicke auf diesen Link um einen Account zu erstellen</a>.
+</p>
+
+<p>
+  Sollte dieser Link nicht funktionieren, so kannst du mit dem, in
+  dieser Mail enthaltenen Aktivierungscode, einen Account auf der Seite
+  des Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich
+  gerne jederzeit an uns (digitales@ecovillage-hannover.de).
+</p>
+<p><strong>URL:</strong> {{config.ACCOUNT_URL}}</p>
+<p><strong>Aktivierungscode:</strong> {{token}}</p>
+<p>Nach der Erstellung des Accounts erhälst Benutzername und Passwort per Mail.</p>
+<p>-- ecovillage hannover - Team Digitales</p>

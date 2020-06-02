@@ -42,8 +42,10 @@ def create(request, token=None):
     context['token'] = token.strip()
 
     try:
-        args = parse_token(config.account_link_key, token)
-        vorname, nachname, username, mail = args
+        args = parse_token(config.SECRET_KEY, token)
+        CREATE, vorname, nachname, username, mail = args
+        if CREATE != 'create':
+            raise RuntimeError("Falscher Tokentyp")
     except Exception as e:
         messages.add_message(request, messages.ERROR, f"Invalides Token: {e}")
         logger.error(f"Invalid Token: {e}")

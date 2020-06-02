@@ -12,7 +12,7 @@ from . import forms
 app_name = "account"
 
 urlpatterns = [
-    path('create/<str:token>', views.create),
+    path('create/<str:token>', views.create, name='create_with_token'),
     path('create/', views.create),
     path('create', views.create),
     path('login/', auth_views.LoginView.as_view(), name='login'),
