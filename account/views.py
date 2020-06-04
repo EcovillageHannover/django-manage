@@ -158,8 +158,10 @@ def __create(request, context, vorname, nachname, username, mail):
     context['password'] = password
     context['success'] = True
 
-
-    
+    send_mail("[EVH Account] Nutzer angelegt: " +username, "",
+                  config.EMAIL_FROM,
+                  [config.EMAIL_FROM],
+                  fail_silently=True)
 
 
 def password_reset(request, uidb64, token):

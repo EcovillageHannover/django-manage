@@ -1,6 +1,7 @@
+{% load markdownify %}
 <p>Hallo {{vorname}} {{nachname}},</p>
 {% if preface %}
-<p>{{preface}}</p>
+<p>{{preface | markdownify }}</p>
 {% endif %}
 <p>
   Diese Mail enthält alle nötigen Daten um einen Account beim ecovillage hannover zu erstellen. Wenn du einen Account erstellen möchtest, dann
@@ -13,7 +14,7 @@
   Sollte dieser Link nicht funktionieren, so kannst du mit dem, in
   dieser Mail enthaltenen Aktivierungscode, einen Account auf der Seite
   des Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich
-  gerne jederzeit an uns (digitales@ecovillage-hannover.de).
+  gerne jederzeit an uns (support@my-evh.de).
 </p>
 <p><strong>URL:</strong> {{config.ACCOUNT_URL}}</p>
 <p><strong>Aktivierungscode:</strong> {{token}}</p>

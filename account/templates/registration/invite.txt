@@ -10,7 +10,7 @@ Klicke auf diesen Link:
 Sollte dieser Link nicht funktionieren, so kannst du mit dem, in
 dieser Mail enthaltenen Aktivierungscode, einen Account auf der Seite des
 Ecovillage erzeugen. Falls dies auch nicht klappt, wende dich gerne
-jederzeit an uns (digitales@ecovillage-hannover.de)
+jederzeit an uns (support@my-evh.de)
 
   URL:             {{config.ACCOUNT_URL}}
 
@@ -20,3 +20,18 @@ Nach der Erstellung des Accounts erhälst Benutzername und Passwort per
 Mail.
 
    -- ecovillage hannover - Team Digitales
+
+_____________________________________________
+
+ecovillage hannover eG
+Sitz: Davenstedter Str. 200, 30455 Hannover
+Registergericht: Hannover, GnR 200048
+
+Vorstandssprecher: Gerd Nord
+Vorstand: Christine Widdel-Abban,
+Elvira Hendricks, Uwe Bartkus
+
+Aufsichtsratsvorsitz: Hans Mönninghoff
+Stellvertretender Aufsichtsratsvorsitz:
+Brigitte Offermann-Hülse
+_____________________________________________

@@ -105,6 +105,10 @@ class Command(BaseCommand):
                             help="Send mail only to group")
         parser.add_argument("--filter:resend",  metavar="USERNAME",
                             help="Resend the Mail although the user already has an account")
+        parser.add_argument("--filter:maxtry",  metavar="MAXTRY",
+                            help="Maximum number of tries")
+        parser.add_argument("--filter:email",  metavar="EMAIL",
+                            help="Pattern for E-MAiladdress")
 
         # Actions
         parser.add_argument('--action:list', help="actually send the mails",
@@ -128,7 +132,7 @@ class Command(BaseCommand):
             if len(info) == 3:
                 info.append(make_username(info[0],info[1]))
             accounts = [AccountInformation(vorname=info[0],nachname=info[1],email=info[2],
-                                           username=info[3],group=None)]
+                                           username=info[3],group=[])]
 
         logger.info("Read %s Accounts", len(accounts))
 
@@ -162,13 +166,35 @@ class Command(BaseCommand):
 
                     # Populate Users
                     user = LDAPBackend().populate_user(a.username)
-                    logging.info("Populate Users: %s", user)
+                    logging.debug("Populate Users: %s", user)
 
                         
         ################################################################
         # Filter!
         if options['filter:group']:
             accounts = [a for a in accounts if options['filter:group'] in a.group]
+
+
+        invites = {i.md5: i for i in Invite.objects.all()}
+        invite_count = {}
+        for a in accounts:
+            md5 = hashlib.md5(a.email.lower().encode('utf-8')).hexdigest()
+            if md5 in invites:
+                invite_count[a.username] = invites[md5].count
+            else:
+                invite_count[a.username] = 0
+
+        if options['filter:maxtry']:
+            old = len(accounts)
+            accounts = [a for a in accounts
+                        if invite_count[a.username] < int(options['filter:maxtry'])]
+            logger.info("Remove %s accounts: MAXTRY", old - len(accounts))
+
+        if options['filter:email']:
+            old = len(accounts)
+            accounts = [a for a in accounts
+                        if options['filter:email'] in a.email]
+            logger.info("Remove %s accounts: EMAIL", old - len(accounts))
 
 
         if options['action:list']:
@@ -178,9 +204,11 @@ class Command(BaseCommand):
                         if options['filter:resend'] in (a.username, a.group)]
         else:
             # Remove all existing users
+            old = len(accounts)
             accounts = [a for a in accounts if a.username not in existing_users]
+            logger.info("Remove %s accounts: EXISTS", old - len(accounts))
 
-        logger.info("after filtering: %s accounts", len(accounts))
+        logger.info("After filtering: %s accounts", len(accounts))
 
         ################################################################
         # Send and List
@@ -199,6 +227,8 @@ class Command(BaseCommand):
 
             for account in accounts:
                 send_invite_mail(account, msgid=options['send:msgid'], preface=preface)
+        elif options['action:group']:
+            pass
         else:
             for a in accounts:
                 name = a.vorname + ' ' +a.nachname
@@ -212,4 +242,4 @@ class Command(BaseCommand):
                         logger.error("Not matching email-addresses for existing account %s != %s",
                                        a, recorded_mail)
                 exists = {False: ' ', True: 'x'}[a.username in existing_users]
-                print(f"{exists} {name:<30} {'('+a.username+')':<30} {a.email} {a.group}")
+                print(f"{exists} {name:<30} {'('+a.username+')':<30} (try={invite_count[a.username]:2>}) {a.email:>30}  {a.group}")

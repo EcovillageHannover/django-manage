@@ -109,7 +109,7 @@ class Poll(models.Model):
     @property
     def items(self):
         _items = Item.objects.filter(poll=self)
-        return reversed(sorted(_items, key=lambda i: i.position))
+        return sorted(_items, key=lambda i: i.position)
 
     @property
     def results(self):

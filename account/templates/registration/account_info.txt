@@ -7,7 +7,8 @@ ecovillage nutzen kannst, sind:
   Benutzername: {{username}}
   Passwort: {{password}}
 
-Eine ausführliche Übersicht über all unsere Dienste findest du unter:
+Eine ausführliche Übersicht über all unsere Dienste, unter anderem die
+Umfragen, findest du unter:
 
   https://account.my-evh.de
 
@@ -19,3 +20,18 @@ wir bereits eine kleine Anleitung erstellt haben:
   Chat:       https://chat.my-evh.de
 
 -- Team Digitales
+
+_____________________________________________
+
+ecovillage hannover eG
+Sitz: Davenstedter Str. 200, 30455 Hannover
+Registergericht: Hannover, GnR 200048
+
+Vorstandssprecher: Gerd Nord
+Vorstand: Christine Widdel-Abban,
+Elvira Hendricks, Uwe Bartkus
+
+Aufsichtsratsvorsitz: Hans Mönninghoff
+Stellvertretender Aufsichtsratsvorsitz:
+Brigitte Offermann-Hülse
+_____________________________________________

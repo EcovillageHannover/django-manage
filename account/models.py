@@ -50,6 +50,7 @@ def make_username(vorname, nachname):
     repl = { 'ö': 'oe', 'ä': 'ae', 'ü': 'ue', 'ß': 'ss', 'ã': 'a', ' ': '_' }
     for k,v in repl.items():
         username = username.replace(k,v)
+    assert username.encode('ascii').decode('ascii') == username
     return username
 
 

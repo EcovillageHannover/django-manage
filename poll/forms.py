@@ -100,7 +100,6 @@ class PollForm(forms.ModelForm):
                                            item=item,
                                            text=self.cleaned_data[key])
                 vote.save()
-                logger.info("SAVE", vote)
         else:
             raise RuntimeError("Unknown Voting")
         
