@@ -35,7 +35,7 @@ def poll_collection_view(request, poll_collection_id):
     search_q = request.GET.get('q','')
     search_tag = request.GET.get('tag','')
     search_p = request.GET.get('p','')
-
+    
     terms = [x.strip() for x in search_q.split()]
 
     # Tag Autodetection
@@ -49,13 +49,24 @@ def poll_collection_view(request, poll_collection_id):
         search_q = " ".join(terms)
 
     poll_forms = []
-    for p in Poll.objects.filter(poll_collection=pc):
+    number = 1
+    for p in Poll.objects.filter(poll_collection=pc).order_by('id'):
+        # Number all polls of this Poll Collcetion
+        p.number = number
+        number += 1
+
         # If the result is visible, also the unpublished polls are visible
         if not pc.can_change(request.user) and not p.is_published:
             continue
 
-        if search_tag and search_tag not in p.tags.names():
-            continue
+        form = PollForm(instance=p, user=request.user)
+
+        if search_tag:
+            if search_tag == 'Unbeantwortet':
+                if form.user_voted:
+                    continue
+            elif search_tag not in p.tags.names():
+                continue
 
         if search_p and int(search_p) != p.pk:
             continue
@@ -67,15 +78,17 @@ def poll_collection_view(request, poll_collection_id):
             else:
                 continue
 
-        poll_forms.append(PollForm(instance=p, user=request.user))
 
+        poll_forms.append(form)
+
+    tags = list(sorted(available_tags)) + ["Unbeantwortet"]
     context = {
         'poll_collection': pc,
         'poll_forms': poll_forms,
         'search_q':    search_q,
         'search_p':    search_p,
         'search_tag':  search_tag,
-        'available_tags': sorted(available_tags),
+        'available_tags': tags,
         'can_view':    pc.can_view(request.user),
         'can_vote':    pc.can_vote(request.user),
         'can_analyze': pc.can_analyze(request.user),

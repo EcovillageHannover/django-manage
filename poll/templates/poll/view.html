@@ -44,6 +44,7 @@
       <span class="float-right">
         {% if available_tags %}
           Schlagwörter-Filter:
+        
           {% for tag in available_tags%}
             {% if tag == search_tag %}
               <a href="?q={{search_q}}" class="mb-2 btn btn-warning">{{tag}} (x)</a>
@@ -51,11 +52,10 @@
               <a href="?q={{search_q}}&tag={{tag}}" class="mb-2 btn btn-secondary">{{tag}}</a>
             {% endif %}
           {% endfor %}
-        {% endif %}
-        {% if search_p %}
+              {% endif %}
+        {% if search_p%}
           <a href="?search_p=" class="btn mb-2 btn-warning">Alle anzeigen</a>
         {% endif %}
-
       </span>
     </div>
   </div>
@@ -70,7 +70,7 @@
 {% for form in poll_forms %}
   <div class="card card-light-bg mb-3">
     <h3 class="card-header">
-      {{form.instance.question}} <a href="?p={{form.instance.id}}">&#x1F517;</a>
+      {{form.instance.number}}. {{form.instance.question}} <a href="?p={{form.instance.id}}">&#x1F517;</a>
       <span class="float-right">
         {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
         {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
