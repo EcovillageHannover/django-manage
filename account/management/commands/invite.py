@@ -10,6 +10,8 @@ import evh.settings_local as config
 from django.urls import reverse
 from django.template.loader import render_to_string
 
+import logging
+logger = logging.getLogger(__name__)
 
 AccountInformation = namedtuple('AccountInformation',
                                 ['vorname',
@@ -19,9 +21,9 @@ AccountInformation = namedtuple('AccountInformation',
                                  'group', # Optional
                                  ])
 
-def read_csv(fn):
-    with open(fn) as fd:
-        group = None
+def read_csv(fn, encoding=None):
+    with open(fn, encoding=encoding) as fd:
+        group = []
         for record in csv.DictReader(fd):
             for field in record:
                 if record[field]:
@@ -30,7 +32,10 @@ def read_csv(fn):
             if record['vorname'].startswith("#"):
                 if 'group' in record['vorname'] and '=' in record['vorname']:
                     group = record['vorname'].lstrip('#').split("=")[1].strip()
-                    group = group.lower()
+                    if not group:
+                        group = []
+                    else:
+                        group = [group.lower()]
                 continue
 
             if not record.get('username'):
@@ -87,8 +92,13 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         # Sources
         parser.add_argument("--source:csv", help="CSV-File")
+        parser.add_argument("--source:csv:encoding", help="special CSV encoding")
         parser.add_argument("--source:argv", help="vorname,nachname,email,username")
-        
+
+        # Modify
+        parser.add_argument("--modify:override", help="Python file to override")
+        parser.add_argument("--modify:group", help="Add group to all users")
+
         # Filters
         parser.add_argument("--filter:group", '--group', metavar="GROUP",
                             help="Send mail only to group")
@@ -96,8 +106,10 @@ class Command(BaseCommand):
                             help="Resend the Mail although the user already has an account")
 
         # Actions
-        #parser.add_argument('--action:list', help="actually send the mails",
-        #                    action="store_true", required=False)
+        parser.add_argument('--action:list', help="actually send the mails",
+                            action="store_true", required=False)
+        parser.add_argument('--action:group', help="Add existing users to groups",
+                            action="store_true", required=False)
         parser.add_argument('--action:send', help="actually send the mails",
                             action="store_true", required=False)
 
@@ -109,7 +121,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if options['source:csv']:
-            accounts = list(read_csv(options['source:csv']))
+            accounts = list(read_csv(options['source:csv'], encoding=options['source:csv:encoding']))
         elif options['source:argv']:
             info = [x.strip() for x in options['source:argv'].split(",")]
             if len(info) == 3:
@@ -117,23 +129,54 @@ class Command(BaseCommand):
             accounts = [AccountInformation(vorname=info[0],nachname=info[1],email=info[2],
                                            username=info[3],group=None)]
 
+        logger.info("Read %s Accounts", len(accounts))
+
+        if options['modify:override']:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("override", options['modify:override'])
+            foo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(foo)
+
+            accounts = [foo.override(a) for a in accounts]
+            accounts = [a for a in accounts if a]
+
+        existing_users = ldap_users()
+        ################################################################
+        # Sanity Checks
+        usernames = set()
+        for a in accounts:
+            assert a.username not in usernames, "Duplicate Username: %s" % a.username
+            usernames.add(a.username)
+
+        for a in accounts:
+                ldap_user = existing_users.get(a.username)
+                if not ldap_user: continue
+                missing_groups = set(a.group) - set(ldap_user['groups'])
+                if missing_groups:
+                    logger.warning("User %s is not in groups %s",
+                                   a.username, missing_groups)
+                if options['action:group']:
+                    for group in missing_groups:
+                        ldap_addgroup(a.username, group)
+                        
+        ################################################################
         # Filter!
         if options['filter:group']:
-            accounts = [a for a in accounts if a.group == options['filter:group']]
+            accounts = [a for a in accounts if options['filter:group'] in a.group]
 
-        existing_users = ldap_users(config)
-        if not options['filter:resend']:
-            for account in accounts:
-                ldap_user = existing_users.get(account.username)
-                if not ldap_user: continue
-                if account.group and account.group not in ldap_user['groups']:
-                    print("WARNING: User {} is not in group {}".format(account.username, account.group))
-            # Remove all existing users
-            accounts = [a for a in accounts if a.username not in existing_users]
-        else:
+
+        if options['action:list']:
+            pass
+        elif options['filter:resend']:
             accounts = [a for a in accounts
                         if options['filter:resend'] in (a.username, a.group)]
+        else:
+            # Remove all existing users
+            accounts = [a for a in accounts if a.username not in existing_users]
 
+        logger.info("after filtering: %s accounts", len(accounts))
+
+        ################################################################
         # Send and List
         if options['action:send']:
             print(f"Empfänger({len(accounts)})", repr([a.email for a in accounts]))
@@ -153,5 +196,14 @@ class Command(BaseCommand):
         else:
             for a in accounts:
                 name = a.vorname + ' ' +a.nachname
+                exists = ' ' 
+                if a.username in existing_users:
+                    exists = 'x'
+                    recorded_mail = existing_users[a.username]['mail'][0].decode()
+                    if recorded_mail != a.email and not (
+                            'my-evh' in recorded_mail or 'ecovillage' in recorded_mail
+                    ):
+                        logger.error("Not matching email-addresses for existing account %s != %s",
+                                       a, recorded_mail)
                 exists = {False: ' ', True: 'x'}[a.username in existing_users]
-                print(f"{exists} {name:<30} {'('+a.username+')':<30} {a.email}")
+                print(f"{exists} {name:<30} {'('+a.username+')':<30} {a.email} {a.group}")
