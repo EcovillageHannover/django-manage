@@ -59,10 +59,12 @@ class Poll(models.Model):
     RADIO = 'RA'
     CHECKBOX = 'CE'
     TEXT = 'TX'
+    PRIO = 'PR'
     TYPE_CHOICES = (
         (RADIO, 'Einfachauswahl'),
         (CHECKBOX, 'Mehrfachauswahl'),
-        (TEXT, 'Freitext')
+        (TEXT, 'Freitext'),
+        (PRIO, 'Priorisierung')
     )
 
     poll_type = models.CharField(max_length=2,
@@ -95,6 +97,10 @@ class Poll(models.Model):
     @property
     def is_text(self):
         return self.poll_type == Poll.TEXT
+
+    @property
+    def is_prio(self):
+        return self.poll_type == Poll.PRIO
     
     @property
     def items(self):
@@ -106,11 +112,16 @@ class Poll(models.Model):
         ret = []
         for item in self.items:
             count = self.vote_count
-            if count > 0:
-                percent = int(item.vote_count / float(count) * 100)
+            if count == 0:
+                ret += [(item, 0)]
             else:
-                percent = 0.0
-            ret += [(item, percent)]
+                if self.is_prio:
+                    votes = Vote.objects.filter(item=item)
+                    avg =  sum(int(v.text) for v in votes) / float(votes.count())
+                    ret += [(item, "%.1f"%avg, int(avg/5.0*100))]
+                else:
+                    percent = int(item.vote_count / float(count) * 100)
+                    ret += [(item, percent, percent)]
         return ret
 
     @property

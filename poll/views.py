@@ -122,3 +122,4 @@ def percentage(poll, item):
     poll_vote_count = poll.get_vote_count()
     if poll_vote_count > 0:
         return float(item.get_vote_count()) / float(poll_vote_count) * 100
+

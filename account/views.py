@@ -220,7 +220,8 @@ def password_reset(request, uidb64, token):
 
 
 @login_required
-def profile(request):
+def profile(request): 
+    user = LDAPBackend().populate_user(request.user.username)
     return render(request, 'account/profile.html', {
-        'user': request.user
+        'user': user
     })

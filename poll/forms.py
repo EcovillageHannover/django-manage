@@ -6,6 +6,8 @@ from .models import Poll, Item, Vote, PollCollection
 import logging
 logger = logging.getLogger(__name__)
 
+class HorizontalRadioSelect(forms.RadioSelect):
+    template_name = 'horizontal_select.html'
 
 class PollForm(forms.ModelForm):
     class Meta:
@@ -24,6 +26,17 @@ class PollForm(forms.ModelForm):
             self.initial['text'] = ""
             for vote in self.votes:
                 self.initial['text'] += vote.text
+
+        elif self.instance.poll_type == Poll.PRIO:
+            items = Item.objects.filter(poll=self.instance)
+            for item in reversed(sorted(items, key=lambda i: i.position)):
+
+                self.fields['prio-' + str(item.id)] = forms.ChoiceField(
+                    choices=[(x, str(x)) for x in range(0, 6)],
+                    widget = HorizontalRadioSelect(attrs={'title': item.value})
+                )
+            for vote in self.votes:
+                self.initial['prio-' + str(vote.item.pk)] = vote.text
         else:
             self.choices = []
             items = Item.objects.filter(poll=self.instance)
@@ -77,7 +90,17 @@ class PollForm(forms.ModelForm):
                                            poll=self.instance,
                                            item=item)
                 vote.save()
+        elif any([x.startswith('prio-') for x in self.cleaned_data]):
+            for key in self.cleaned_data:
+                if not key.startswith('prio-'): continue
+                item_id = int(key.split("-")[1])
+                item = Item.objects.get(pk=item_id)
+                vote = Vote.objects.create(user=user,
+                                           poll=self.instance,
+                                           item=item,
+                                           text=self.cleaned_data[key])
+                vote.save()
+                logger.info("SAVE", vote)
         else:
             raise RuntimeError("Unknown Voting")
         
-
