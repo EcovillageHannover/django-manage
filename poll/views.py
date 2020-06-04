@@ -16,7 +16,7 @@ from .forms import *
 @login_required
 def poll_collection_list(request):
     pc = PollCollection.objects.all()
-    pc = [p for p in pc if p.can_view(request.user)]
+    pc = [p for p in pc if (p.is_published and p.can_view(request.user)) or p.can_change(request.user)]
     pc = sorted(pc, key=lambda p: (not p.is_active, p.created_at))
     context = {"poll_collections": pc}
     return render(request, "poll/list.html", context)

@@ -29,7 +29,7 @@ class PollForm(forms.ModelForm):
 
         elif self.instance.poll_type == Poll.PRIO:
             items = Item.objects.filter(poll=self.instance)
-            for item in reversed(sorted(items, key=lambda i: i.position)):
+            for item in sorted(items, key=lambda i: i.position):
 
                 self.fields['prio-' + str(item.id)] = forms.ChoiceField(
                     choices=[(x, str(x)) for x in range(0, 6)],
@@ -40,7 +40,7 @@ class PollForm(forms.ModelForm):
         else:
             self.choices = []
             items = Item.objects.filter(poll=self.instance)
-            for item in reversed(sorted(items, key=lambda i: i.position)):
+            for item in sorted(items, key=lambda i: i.position):
                 self.choices.append((item.id, item.value))
 
             if self.instance.poll_type == Poll.RADIO:

@@ -7,13 +7,7 @@
 {% block title %} {{ poll_collection.name }}{% endblock %}
 
 {% block content %}
-  
-  {% if can_change %}
-    <a href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
-      <span class="float-right btn btn-danger">Bearbeiten</span>
-    </a>
-  {% endif %}
-  
+
 {% if not poll_collection.is_published %}
 <div class="alert alert-danger">
   Die Umfrage ist unsichtbar.
@@ -27,10 +21,26 @@
 {% endif %}
 
 
+<style>
+  table, td, th {
+      border: 1px solid black;
+  }
+  td { padding: 3px;}
+  
+</style>
 
-<p class="w-80">
-  {{ poll_collection.description | markdownify }}
-</p>
+<div class="w-80">
+  {% if can_change %}
+<a href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
+  <span class="float-right btn btn-danger">Bearbeiten</span>
+</a>
+{% endif %}
+
+
+
+{{ poll_collection.description | markdownify  }}
+  
+</div>
 
 <p>
 <form method="GET" action="{% url 'poll:view' poll_collection.pk %}">
@@ -69,7 +79,7 @@
 
 {% for form in poll_forms %}
   <div class="card card-light-bg mb-3">
-    <h3 class="card-header">
+    <h3 id="poll{{form.instance.id}}" class="card-header">
       {{form.instance.number}}. {{form.instance.question}} <a href="?p={{form.instance.id}}">&#x1F517;</a>
       <span class="float-right">
         {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
@@ -79,7 +89,7 @@
     </h3>
     <div class="card-block p-3">
       <div class="row mb-3">
-        <div class="col-md-9">{{form.instance.description | markdownify }}</div>
+        <div class="col-md-12">{{form.instance.description | markdownify }}</div>
         <div class="col-md-3">
           {% if form.instance.tags.names %}
           <span class="float-right">Schlagworte: {% for tag in form.instance.tags.names %}
@@ -96,7 +106,7 @@
             {% if can_vote and poll_collection.is_active and form.instance.is_published %}
                {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-info" %}
             {% endif %}
-            <input type="hidden" name="next" value="{{ next }}" />
+            <input type="hidden" name="next" value="{{ next }}#poll{{form.instance.id}}" />
           </form>
         </div>
         <div class="col-md-6 poll-result">

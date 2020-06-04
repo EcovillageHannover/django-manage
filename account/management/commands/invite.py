@@ -1,5 +1,6 @@
 # coding: utf-8
 
+from django_auth_ldap.backend import LDAPBackend
 from django.core.mail import EmailMultiAlternatives
 from django.core.management.base import BaseCommand, CommandError
 import hashlib
@@ -158,6 +159,11 @@ class Command(BaseCommand):
                 if options['action:group']:
                     for group in missing_groups:
                         ldap_addgroup(a.username, group)
+
+                    # Populate Users
+                    user = LDAPBackend().populate_user(a.username)
+                    logging.info("Populate Users: %s", user)
+
                         
         ################################################################
         # Filter!

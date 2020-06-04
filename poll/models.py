@@ -8,6 +8,9 @@ from django.db.models import Count
 
 from taggit.managers import TaggableManager
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 import datetime
 
@@ -39,17 +42,18 @@ class PollCollection(models.Model):
         return self.name
 
     def can_view(self, user):
+        logger.info("%s %s", user, user.is_superuser)
         return user.has_perm('view_pollcollection', self) \
-            or user.has_perm('vote_pollcollection', self)
+            or user.has_perm('vote_pollcollection', self) or user.is_superuser
 
     def can_vote(self, user):
-        return user.has_perm('vote_pollcollection', self)
+        return user.has_perm('vote_pollcollection', self) or user.is_superuser
 
     def can_analyze(self, user):
-        return user.has_perm('analyze_pollcollection', self)
+        return user.has_perm('analyze_pollcollection', self) or user.is_superuser
 
     def can_change(self, user):
-        return user.has_perm('change_pollcollection', self)
+        return user.has_perm('change_pollcollection', self) or user.is_superuser
 
 
 class Poll(models.Model):
@@ -113,7 +117,7 @@ class Poll(models.Model):
         for item in self.items:
             count = self.vote_count
             if count == 0:
-                ret += [(item, 0)]
+                ret += [(item, 0, 0)]
             else:
                 if self.is_prio:
                     votes = Vote.objects.filter(item=item)
