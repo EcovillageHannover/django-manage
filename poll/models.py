@@ -42,7 +42,6 @@ class PollCollection(models.Model):
         return self.name
 
     def can_view(self, user):
-        logger.info("%s %s", user, user.is_superuser)
         return user.has_perm('view_pollcollection', self) \
             or user.has_perm('vote_pollcollection', self) or user.is_superuser
 

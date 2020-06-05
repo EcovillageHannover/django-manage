@@ -10,7 +10,13 @@ Benutzerprofil
 {% block content %}
 <p>
   <strong>Benutzername:</strong> {{user.username}}<br/>
-  <strong>Gruppen:</strong> {{user.ldap_user.group_names}}
+  <strong>Eigene Gruppen:</strong><ul>
+    {% for group in user.ldap_user.group_names %}
+    {% if group != 'ldap-user' %}
+    <li>{{group}}</li>
+    {% endif %}
+    {% endfor %}
+    </ul>
 </p>
 
 <p>

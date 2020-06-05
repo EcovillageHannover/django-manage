@@ -16,10 +16,12 @@ from django.contrib.auth.decorators import login_required
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
+from account.signals import user_changed
+
 
 
 import evh.settings as config
-from .models import parse_token
+from .models import parse_token, Invite, ldap_addgroup
 from .forms import *
 
 
@@ -59,6 +61,8 @@ def create(request, token=None):
     context['username'] = username
     context['mail'] = mail
 
+    context['invite'] = Invite.find_by_mail(mail)
+
     if request.POST.get('submit') == 'true':
         checkboxes = [
             request.POST.get('datensatz'),
@@ -75,7 +79,6 @@ def create(request, token=None):
                 return render(request, 'account/create.html', context)
         else:
             messages.add_message(request, messages.ERROR, "Deine Zustimmung ist erforderlich um einen Account anzulegen.")
-            print("token")
     return render(request, 'account/create.html', context)
 
 
@@ -117,11 +120,22 @@ def __create(request, context, vorname, nachname, username, mail):
         context['success'] = False
         return
 
+    ################################################################
+    # Initial Groups
+    invite = Invite.find_by_mail(mail)
+    groups = [g for g in (invite.groups or "").split(",") if g]
+    for group in groups:
+        if ldap_addgroup(username, group):
+            messages.add_message(request, messages.SUCCESS,
+                                 "Du wurdest der Gruppe %s hinzugefügt" % group)
+
 
     ################################################################
     # Login user
     user = authenticate(username=username, password=password)
     login(request, user)
+
+    user_changed.send(sender=create, username=username)
 
     ################################################################
     # Mail versenden
@@ -162,6 +176,7 @@ def __create(request, context, vorname, nachname, username, mail):
                   config.EMAIL_FROM,
                   [config.EMAIL_FROM],
                   fail_silently=True)
+
 
 
 def password_reset(request, uidb64, token):
@@ -222,7 +237,8 @@ def password_reset(request, uidb64, token):
 
 
 @login_required
-def profile(request): 
+def profile(request):
+    user_changed.send(sender=profile, username=request.user.username)
     user = LDAPBackend().populate_user(request.user.username)
     return render(request, 'account/profile.html', {
         'user': user

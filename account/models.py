@@ -11,9 +11,10 @@ from django.db.models.manager import Manager
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.conf import settings
-
-
 from taggit.managers import TaggableManager
+
+import logging
+logger = logging.getLogger(__name__)
 
 import datetime
 
@@ -23,6 +24,13 @@ class Invite(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     count = models.IntegerField(default=0)
+    groups = models.TextField(blank=True)
+
+    @staticmethod
+    def find_by_mail(email):
+        md5 = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
+        invite, created = Invite.objects.get_or_create(md5=md5)
+        return invite
 
 
 def format_token(key, fields):
@@ -81,4 +89,10 @@ def ldap_addgroup(username, group):
     user_dn = f"cn={username},{settings.AUTH_LDAP_USER_DN}"
 
     modlist = [(ldap.MOD_ADD, 'member', [user_dn.encode()])]
-    conn.modify_s(group_dn, modlist)
+    try:
+        conn.modify_s(group_dn, modlist)
+        logger.info("Added user %s to group %s", username, group)
+        return True
+    except Exception as e:
+        logger.error("Could not add user %s to group %s: %s", username, group, e)
+    return False

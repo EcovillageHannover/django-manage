@@ -10,6 +10,8 @@ from collections import namedtuple
 import evh.settings_local as config
 from django.urls import reverse
 from django.template.loader import render_to_string
+from account.signals import user_changed
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -145,6 +147,11 @@ class Command(BaseCommand):
             accounts = [foo.override(a) for a in accounts]
             accounts = [a for a in accounts if a]
 
+        if options['modify:group']:
+            for a in accounts:
+                if options['modify:group'] not in a.group:
+                    a.group.append(options['modify:group'])
+
         existing_users = ldap_users()
         ################################################################
         # Sanity Checks
@@ -163,26 +170,25 @@ class Command(BaseCommand):
                 if options['action:group']:
                     for group in missing_groups:
                         ldap_addgroup(a.username, group)
+                        user_changed.send(sender=self.__class__, username=a.username)
 
-                    # Populate Users
-                    user = LDAPBackend().populate_user(a.username)
-                    logging.debug("Populate Users: %s", user)
 
-                        
         ################################################################
         # Filter!
         if options['filter:group']:
             accounts = [a for a in accounts if options['filter:group'] in a.group]
 
 
-        invites = {i.md5: i for i in Invite.objects.all()}
         invite_count = {}
         for a in accounts:
-            md5 = hashlib.md5(a.email.lower().encode('utf-8')).hexdigest()
-            if md5 in invites:
-                invite_count[a.username] = invites[md5].count
-            else:
-                invite_count[a.username] = 0
+            invite = Invite.find_by_mail(a.email)
+            invite_count[a.username] = invite.count
+            groups = set((invite.groups or "").split(","))
+            groups = groups | set(a.group)
+            groups = ",".join(sorted([x for x in groups if x]))
+            if groups != invite.groups:
+                invite.groups = groups
+                invite.save()
 
         if options['filter:maxtry']:
             old = len(accounts)
