@@ -8,15 +8,29 @@
 
 
 {% block content %}
-
- {% if user.is_authenticated %}
+  {% if not user.is_authenticated %}
+  <p>Um Zugriff auf die Online-Dienste des ecovillage hannover e.G. zu
+  bekommen musst du dicht mit <strong>deinem EVH Account</strong>
+  einloggen. Wenn du ein Mitglied der Genossenschaft bist, solltest du
+  bereits einen Aktivierungscode und Hinweise zur Accounterzeugung von
+  uns erhalten haben. Solltest du, obwohl du Mitglied bist, keinen
+  Aktivierungscode von uns erhalten haben, schreib uns eine Mail
+  an <a href="mailto:support@my-evh.de">support@my-evh.de</a>. Sobald
+  du deinen Zugang aktiviert hast, kannst du dich bei unseren Diensten
+  einloggen.<p>
+  
+{% else %}
+  <p class="alert alert-success">Du bist mit deinem EVH Account ({{user}}) eingeloggt.
+  </p>
   <div class="card card-light-bg mb-3" >
-    <h3 class="card-header bg-danger">Wichtige und aktuelle Links</h3>
-    <div class="card-blok">
+    <div class="card-blok" style="background-color: #f8d7da;">
+      <h3 class="card-header" style="color: rgb(114, 28, 36);">Wichtige und aktuelle Links</h3>
       <p>
       <ul>
-        <li>Bis zum 07.06.2020 (dieses Wochenende!): <a href="https://account.my-evh.de/poll/polls/4">Termine für den Rückkopplungsworkshop</a></li>
-        <li>Bei <strong>Fragen oder Problemen</strong>: Schicke eine Mail an <a href="mailto:support@my-evh.de">support@my-evh.de</a></li>
+        <li>Bis zum 07.06.2020: <a href="https://account.my-evh.de/poll/polls/4">Termine für den Rückkopplungsworkshop</a> <strong>(dieses Wochenende!)</strong></li>
+        <li>Bis zum 17.06.2020: <a href="https://account.my-evh.de/poll/polls/3">Diskussion für den Rückkopplungsworkshop</a></li>
+        <li>Bis zum 17.06.2020: <a href="https://new.ecovillage-hannover.de">Entwürfe der Wettbewerbsteilnehmenden</a></li>
+        <li>Bei <strong>Technischen Fragen oder Problemen</strong>: Schicke eine Mail an <a href="mailto:support@my-evh.de">support@my-evh.de</a></li>
       </ul>
       </p>
   </div>
@@ -28,11 +42,12 @@
     {% if not user.is_authenticated %}
       <div class="col-sm-4">
         <div class="card card-light-bg">
-          <h3 class="card-header">Account</h3>
+          <h3 class="card-header">EVH Account</h3>
           <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="/static/imgs/account.svg">
           <div class="card-block">
             <p>Erstelle einen Account mit einem Erstellungscode.</p>
             <a href="https://account.my-evh.de/account/create" class="btn btn-primary">Account erstellen</a>
+            <a href="{% url 'account:login' %}" class="btn btn-primary">Einloggen</a>
           </div>
         </div>
       </div>

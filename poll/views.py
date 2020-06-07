@@ -15,10 +15,15 @@ from .forms import *
 
 @login_required
 def poll_collection_list(request):
-    pc = PollCollection.objects.all()
-    pc = [p for p in pc if (p.is_published and p.can_view(request.user)) or p.can_change(request.user)]
-    pc = sorted(pc, key=lambda p: (not p.is_active, p.created_at))
-    context = {"poll_collections": pc}
+    pcs = PollCollection.objects.all()
+    pcs = [p for p in pcs if (p.is_published and p.can_view(request.user)) or p.can_change(request.user)]
+    pcs = sorted(pcs, key=lambda p: (not p.is_active, p.created_at))
+    for pc in pcs:
+        pc.unvoted = len(pc.get_unvoted(request.user))
+    context = {
+        "poll_collections": pcs,
+    }
+
     return render(request, "poll/list.html", context)
 
 
@@ -50,7 +55,7 @@ def poll_collection_view(request, poll_collection_id):
 
     poll_forms = []
     number = 1
-    for p in Poll.objects.filter(poll_collection=pc).order_by('id'):
+    for p in Poll.objects.filter(poll_collection=pc).order_by('position', 'id'):
         # Number all polls of this Poll Collcetion
         p.number = number
         number += 1

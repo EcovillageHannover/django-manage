@@ -3,10 +3,12 @@
 {% load bootstrap4 %}
 
 {% block title %}
-LDAP Login
+EVH-Account Login
 {% endblock %}
 
 {% block content %}
+<p>Um Zugriff auf die Online-Dienste des ecovillage hannover e.G. zu bekommen musst du dicht mit deinem EVH Account einloggen. Wenn du ein Mitglied der Genossenschaft bist, solltest du bereits einen Aktivierungscode und Hinweise zur Accounterzeugung von uns erhalten haben. Solltest du, obwohl du Mitglied bist, keinen Aktivierungscode von uns erhalten haben, schreib uns eine Mail an <a href="mailto:support@my-evh.de">support@my-evh.de</a>. Sobald du deinen Zugang aktiviert hast, kannst du dich bei unseren Diensten einloggen.<p>
+  
   {% if form.errors %}
     <p>Dein Benutzername/Passwort Your username and password didn't match. Please try again.</p>
   {% endif %}
@@ -32,5 +34,4 @@ LDAP Login
   
   {# Assumes you setup the password_reset view in your URLconf #}
   {# <p><a href="{% url 'password_reset' %}">Lost password?</a></p>#}
-  
 {% endblock %}

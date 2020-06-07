@@ -75,7 +75,7 @@ def ldap_users():
     ret = conn.search_s(settings.AUTH_LDAP_USER_DN,
                       ldap.SCOPE_SUBTREE,
                       "(objectClass=inetOrgPerson)",
-                      ["cn", "mail", "displayName", 'memberOf']
+                      ["cn", "mail", "displayName", 'memberOf', 'createTimestamp']
     )
     ret = {x['cn'][0].decode(): x for dn, x in ret}
     for dn in ret:

@@ -151,7 +151,7 @@ admin.site.register(Poll, PollAdmin)
 class PollInline(admin.TabularInline):
     model = Poll
     extra = 0
-    fields = (('question', 'poll_type', 'is_published'),)
+    fields = (('question', 'poll_type', 'is_published', 'position'),)
     show_change_link = True
 
     def has_add_permission(self, request, obj):

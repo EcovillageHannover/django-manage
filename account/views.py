@@ -52,7 +52,7 @@ def create(request, token=None):
         if CREATE != 'create':
             raise RuntimeError("Falscher Tokentyp")
     except Exception as e:
-        messages.add_message(request, messages.ERROR, f"Invalides Token: {e}")
+        messages.add_message(request, messages.ERROR, f"Invalides Token: {e} ({token})")
         logger.error(f"Invalid Token: {e}")
         return render(request, 'account/create.html', context)
 

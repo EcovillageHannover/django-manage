@@ -54,6 +54,12 @@ class PollCollection(models.Model):
     def can_change(self, user):
         return user.has_perm('change_pollcollection', self) or user.is_superuser
 
+    def get_unvoted(self, user):
+        if not self.can_vote(user) or not self.is_active or not self.is_published:
+            return []
+        return self.polls.all().exclude(vote__user=user)
+
+
 
 class Poll(models.Model):
     poll_collection = models.ForeignKey(PollCollection, on_delete=models.CASCADE,
@@ -87,9 +93,12 @@ class Poll(models.Model):
 
     tags = TaggableManager(blank=True)
 
+    position = models.SmallIntegerField(default=1)
+
     class Meta:
         verbose_name = "Frage"
         verbose_name_plural = "Fragen"
+        ordering = ["position", "id"]
 
     def __unicode__(self):
         return self.question
@@ -107,8 +116,7 @@ class Poll(models.Model):
     
     @property
     def items(self):
-        _items = Item.objects.filter(poll=self)
-        return sorted(_items, key=lambda i: i.position)
+        return Item.objects.filter(poll=self).order_by('position', 'id')
 
     @property
     def results(self):
@@ -132,6 +140,18 @@ class Poll(models.Model):
         return Vote.objects \
                    .filter(poll=self)
 
+    def has_voted(self, user):
+        return Vote.objects \
+                   .filter(poll=self, user=user)\
+                   .exists()
+
+    def get_unvoted(self, user):
+        polls = Poll.objects.all()\
+                    .exclude(vote__user=me)\
+                    .filter(poll_collection__is_active=True,
+                            poll_collection__is_published=True)
+        return [p for p in polls if p.can_vote(user)]
+        
     @property
     def vote_count(self):
         return self.votes.aggregate(votes=Count('user', distinct=True))['votes']
@@ -148,6 +168,7 @@ class Item(models.Model):
     class Meta:
         verbose_name = "Antwort"
         verbose_name_plural = "Antworten"
+        ordering = ["position", "id"]
 
     def __unicode__(self):
         return self.value

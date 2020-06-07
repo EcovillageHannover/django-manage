@@ -40,6 +40,9 @@ def read_csv(fn, encoding=None):
                     else:
                         group = [group.lower()]
                 continue
+            if len(record['vorname']) >= 30:
+                record['vorname'] = record['vorname'].split(" ")[0]
+
 
             if not record.get('username'):
                 record['username'] = make_username(
@@ -48,11 +51,15 @@ def read_csv(fn, encoding=None):
                 )
             yield AccountInformation(**record, group=group)
 
-def send_invite_mail(account, msgid=False, preface=None):
+def make_token(account):
     fields = ['create', account.vorname, account.nachname, account.username, account.email]
     token = format_token(config.SECRET_KEY, fields)
     assert fields == parse_token(config.SECRET_KEY, token)
     token = token.decode('utf-8')
+    return token
+    
+def send_invite_mail(account, msgid=False, preface=None):
+    token = make_token(account)
 
     context = dict(
         config=config,
@@ -119,6 +126,9 @@ class Command(BaseCommand):
                             action="store_true", required=False)
         parser.add_argument('--action:send', help="actually send the mails",
                             action="store_true", required=False)
+        parser.add_argument('--action:print', help="Print the tokens",
+                            action="store_true", required=False)
+
 
         parser.add_argument('--send:preface', help="Preface Message for the Account Mail",
                             metavar='FILE', required=False)
@@ -203,7 +213,7 @@ class Command(BaseCommand):
             logger.info("Remove %s accounts: EMAIL", old - len(accounts))
 
 
-        if options['action:list']:
+        if options['action:list'] or options['action:print']:
             pass
         elif options['filter:resend']:
             accounts = [a for a in accounts
@@ -235,6 +245,9 @@ class Command(BaseCommand):
                 send_invite_mail(account, msgid=options['send:msgid'], preface=preface)
         elif options['action:group']:
             pass
+        elif options['action:print']:
+            for a in accounts:
+                print(a.username, make_token(a))
         else:
             for a in accounts:
                 name = a.vorname + ' ' +a.nachname

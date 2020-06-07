@@ -16,9 +16,14 @@
 <tr>
   <td>{{pc.id}}</td>
   <td><a href="{% url 'poll:view' pc.id %}">
-      {% if not pc.is_published %}<span class="badge badge-secondary">Unsichtbar</span>{% endif %}
       {{pc.name}}
-  </a></td>
+      
+    </a>
+    {% if not pc.is_published %}<span class="badge badge-secondary">Unsichtbar</span>{% endif %}
+    {% if pc.unvoted %}
+      <a class="float-right" href="{% url 'poll:view' pc.id %}?tag=Unbeantwortet"><span class="badge badge-info">{{pc.unvoted}} unbeantwortete Fragen</span></a>
+    {% endif %}
+  </td>
   <td>{{pc.created_at}}</a></td>
   <td>{% if pc.is_active%}Läuft{% else %}Beendet{% endif %}</td>
 </tr>
