@@ -89,7 +89,8 @@ class Command(BaseCommand):
         fixed_assignments = dict([
             ('Nord architecture', ['albert.hensen', 'daria.mengert', 'elisabet.adeva', 'ines.heygster', 'kristina.osmers', 'michael.boeken', 'petra.kalinowsky', 'sara.reimann', 'thorsten.peter', 'ursula.kleber']),
             ('studiomauer / cityförster', ['daria.kistner-drobiner', 'elisabet.adeva', 'ines.heygster', 'kristina.osmers', 'maximilian.heise', 'olaf.steinl', 'patricia.bull', 'rebekka.bolte', 'thorsten.peter', 'ursula.kleber']),
-            ('haascookzemmrich / transsolar', ['daria.kistner-drobiner', 'elisabet.adeva', 'ines.heygster', 'marina.bauer', 'olaf.steinl', 'patricia.bull', 'petra.kalinowsky', 'rebekka.bolte', 'roswita.schlachte', 'thorsten.peter'])
+            ('haascookzemmrich / transsolar', ['daria.kistner-drobiner', 'elisabet.adeva', 'ines.heygster', 'marina.bauer', 'olaf.steinl', 'patricia.bull', 'petra.kalinowsky', 'rebekka.bolte', 'roswita.schlachte', 'thorsten.peter']),
+            ('ISSS research / plancommun', ['albert.hensen', 'elvira.hendricks', 'florian.eick', 'kristina.osmers', 'lisa.rempp', 'marina.bauer', 'maximilian.heise', 'michael.boeken', 'patricia.bull', 'sabine-beate.liedtke'])
         ])
 
 
@@ -98,8 +99,11 @@ class Command(BaseCommand):
             for user in users:
                 user = user_by_username[user]
                 assign(item, user)
-        
-        
+
+        for item in places:
+            if item not in fixed_assignments:
+                places[item] += 2
+
         while places and preferences:
             # 1. Find all users with the lowest score
             min_score = min([score[u] for u in preferences])
@@ -133,12 +137,10 @@ class Command(BaseCommand):
         print("----")
         
         for item in sorted(item_assignments, key=lambda a: str(a)):
-            print(f"{item} {len(item_assignments[item])}")
+            print(f"# {item} zusagen: {len(item_assignments[item])}/ absagen: {len(absagen[item])}")
             print((item.value, [u.username for u in item_assignments[item]]))
             for user in item_assignments[item]:
                 print(f"ja   {user.get_full_name()} <{user.email}>")
             for user,score in absagen[item]:
                 print(f"nein {user.get_full_name()} <{user.email}> ({score})")
             print()
-
-        print("utility_score:", utility_score)

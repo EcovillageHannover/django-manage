@@ -33,9 +33,11 @@ def user_changed_hook(sender, **kwargs):
             os.mkdir(directory)
 
         index_php = directory / "index.php"
-        if not index_php.exists():
+        index_php_content = KIRBY_TEMPLATE.format(
+            username=user.username,
+            email=user.email
+        )
+        if not index_php.exists() or open(index_php).read() != index_php_content:
             with open(index_php, "w+") as fd:
-                fd.write(KIRBY_TEMPLATE.format(
-                    username=user.username,
-                    email=user.email))
-            logger.info("Created Kirby Login for %s", user.username)
+                fd.write(index_php_content)
+            logger.info("Created/Updated Kirby Login for %s", user.username)

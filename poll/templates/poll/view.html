@@ -135,7 +135,7 @@
         {% if can_analyze and form.instance.is_text %}
           {% for vote in form.instance.votes %}
             <p>
-              <strong>Nutzer:</strong> {{vote.text | escape}}
+              <strong>NutzerIn:</strong> {{vote.text | escape}}
             </p>
           {% endfor %}
         {% endif %}

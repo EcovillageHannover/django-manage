@@ -54,6 +54,13 @@ class PollCollection(models.Model):
     def can_change(self, user):
         return user.has_perm('change_pollcollection', self) or user.is_superuser
 
+    @staticmethod
+    def list_for_user(user):
+        pcs = PollCollection.objects.all()
+        pcs = [p for p in pcs if (p.is_published and p.can_view(user)) or p.can_change(user)]
+        return pcs
+    
+
     def get_unvoted(self, user):
         if not self.can_vote(user) or not self.is_active or not self.is_published:
             return []

@@ -17,9 +17,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         users = ldap_users()
-        #for username, user in users.items():
-        #    user_changed.send(sender=self.__class__, username=username)
         for username, user in users.items():
-            date = datetime.strptime(user["createTimestamp"][0].decode()[:8], "%Y%m%d")
-            if date.month != 6:
-                print("{} <{}>,".format(user['displayName'][0].decode(), user['mail'][0].decode()))
+            user_changed.send(sender=self.__class__, username=username)
+        #for username, user in users.items():
+        #    date = datetime.strptime(user["createTimestamp"][0].decode()[:8], "%Y%m%d")
+        #    if date.month != 6:
+        #        print("{} <{}>,".format(user['displayName'][0].decode(), user['mail'][0].decode()))

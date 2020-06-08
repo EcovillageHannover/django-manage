@@ -15,8 +15,7 @@ from .forms import *
 
 @login_required
 def poll_collection_list(request):
-    pcs = PollCollection.objects.all()
-    pcs = [p for p in pcs if (p.is_published and p.can_view(request.user)) or p.can_change(request.user)]
+    pcs = PollCollection.list_for_user(request.user)
     pcs = sorted(pcs, key=lambda p: (not p.is_active, p.created_at))
     for pc in pcs:
         pc.unvoted = len(pc.get_unvoted(request.user))
