@@ -4,6 +4,9 @@
 
 {% block bootstrap4_content %}
 
+
+
+
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <a class="navbar-brand" href="/">EVH Account</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +44,14 @@
   <a class="btn btn-primary" href="{% url 'account:login'%}">Login</a>
   {% endif %}
 </nav>
- 
+
+<div class="pt-3 pb-3 mb-2" style="width: 100%; background-color: #f8d7da; border-bottom: 3px solid red; border-top: 3px solid red; font-size: 1.5rem; line-height: 1.5; font-family: 'Times New Roman',Times,serif; font-style: italic;">
+  <div class="container">
+    <strong>Wichtig:</strong> Videostream zur Dorfratssitzung am 13.06.2020 wird Samstag ab 9:45 Uhr auf der <a href="https://new.ecovillage-hannover.de">Entwurfsseite</a> freigeschaltet.
+  </div>
+</div>
+
+
  <div class="container">
    <h1>{% block title %}(no title){% endblock %}</h1>
    

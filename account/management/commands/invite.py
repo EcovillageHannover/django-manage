@@ -16,13 +16,24 @@ from account.signals import user_changed
 import logging
 logger = logging.getLogger(__name__)
 
-AccountInformation = namedtuple('AccountInformation',
-                                ['vorname',
-                                 'nachname',
-                                 'username',
-                                 'email',
-                                 'group', # Optional
-                                 ])
+class AccountInformation:
+    def __init__(self,vorname, nachname, username, email, group):
+        self.__dict__.update(dict(
+            vorname=vorname,
+            nachname=nachname,
+            username=username,
+            email=email,
+            group=group
+        ))
+
+    def __repr__(self):
+        keys = sorted(self.__dict__)
+        items = ("{}={!r}".format(k, self.__dict__[k]) for k in keys)
+        return "{}({})".format(type(self).__name__, ", ".join(items))
+
+    def _asdict(self):
+        return self.__dict__
+
 
 def read_csv(fn, encoding=None):
     with open(fn, encoding=encoding) as fd:
@@ -119,6 +130,8 @@ class Command(BaseCommand):
         parser.add_argument("--filter:email",  metavar="EMAIL",
                             help="Pattern for E-MAiladdress")
 
+        parser.add_argument("--filter:all", action="store_true")
+
         # Actions
         parser.add_argument('--action:list', help="actually send the mails",
                             action="store_true", required=False)
@@ -195,35 +208,38 @@ class Command(BaseCommand):
             invite_count[a.username] = invite.count
             groups = set((invite.groups or "").split(","))
             groups = groups | set(a.group)
-            groups = ",".join(sorted([x for x in groups if x]))
-            if groups != invite.groups:
-                invite.groups = groups
+            groups -= set(['stadt-hannover', ''])
+            group_str = ",".join(sorted([x for x in groups]))
+            if group_str != invite.groups:
+                invite.groups = group_str
                 invite.save()
+            a.group = list(groups)
 
-        if options['filter:maxtry']:
-            old = len(accounts)
-            accounts = [a for a in accounts
-                        if invite_count[a.username] < int(options['filter:maxtry'])]
-            logger.info("Remove %s accounts: MAXTRY", old - len(accounts))
-
-        if options['filter:email']:
-            old = len(accounts)
-            accounts = [a for a in accounts
-                        if options['filter:email'] in a.email]
-            logger.info("Remove %s accounts: EMAIL", old - len(accounts))
-
-
-        if options['action:list'] or options['action:print']:
-            pass
-        elif options['filter:resend']:
-            accounts = [a for a in accounts
-                        if options['filter:resend'] in (a.username, a.group)]
-        else:
-            # Remove all existing users
-            old = len(accounts)
-            accounts = [a for a in accounts if a.username not in existing_users]
-            logger.info("Remove %s accounts: EXISTS", old - len(accounts))
-
+        if not options['filter:all']:
+            if options['filter:maxtry']:
+                old = len(accounts)
+                accounts = [a for a in accounts
+                            if invite_count[a.username] < int(options['filter:maxtry'])]
+                logger.info("Remove %s accounts: MAXTRY", old - len(accounts))
+    
+            if options['filter:email']:
+                old = len(accounts)
+                accounts = [a for a in accounts
+                            if options['filter:email'] in a.email]
+                logger.info("Remove %s accounts: EMAIL", old - len(accounts))
+    
+    
+            if options['action:list'] or options['action:print']:
+                pass
+            elif options['filter:resend']:
+                accounts = [a for a in accounts
+                            if options['filter:resend'] in (a.username, a.group)]
+            else:
+                # Remove all existing users
+                old = len(accounts)
+                accounts = [a for a in accounts if a.username not in existing_users]
+                logger.info("Remove %s accounts: EXISTS", old - len(accounts))
+    
         logger.info("After filtering: %s accounts", len(accounts))
 
         ################################################################

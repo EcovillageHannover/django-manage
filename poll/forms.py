@@ -61,6 +61,14 @@ class PollForm(forms.ModelForm):
     def user_voted(self):
         return any([v.user == self.user for v in self.votes])
 
+    @property
+    def show_results(self):
+        pc = self.instance.poll_collection
+        normal_view = pc.can_analyze(self.user) \
+            and (self.user_voted or not self.pc.is_active)
+        edit_view = pc.can_change(self.user) or self.user.is_superuser
+        return normal_view or edit_view
+
     def clean_choice(self):
         data = self.cleaned_data['choice']
         return Item.objects.get(pk=data)

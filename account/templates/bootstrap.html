@@ -1,5 +1,45 @@
-{% extends 'bootstrap4/bootstrap4.html' %}
+<!DOCTYPE html>
+{% load bootstrap4 %}
+{% if 'use_i18n'|bootstrap_setting %}
+    {% load i18n %}
+    {% get_current_language as LANGUAGE_CODE %}
+{% endif %}
+<html lang="{{ LANGUAGE_CODE|default:'en_us' }}">
 
-{% block bootstrap4_title %}{% block title %}{% endblock %}{% endblock %}
-{% block bootstrap4_extra_script %}{% block javascript %}{% endblock %}{% endblock %}
-{% block bootstrap4_extra_head %}{% block css %}{% endblock %}{% endblock %}
+<head>
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Page title -->
+    <title>{% block title %}Title{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    {% bootstrap_css %}
+
+    <!-- Bootstrap JavaScript if it is in head -->
+    {% if 'javascript_in_head'|bootstrap_setting %}
+        {% bootstrap_javascript %}
+    {% endif %}
+
+    {% block css %}{% endblock %}
+
+</head>
+
+<body>
+{% block bootstrap4_before_content %}{% endblock %}
+{% block bootstrap4_content %} CONTENT {% endblock %}
+{% block bootstrap4_after_content %}{% endblock %}
+
+<!-- Bootstrap JavaScript if it is in body -->
+{% if not 'javascript_in_head'|bootstrap_setting %}
+    {% bootstrap_javascript %}
+{% endif %}
+
+{% block javascript %}{% endblock %}
+
+</body>
+
+</html>
+
