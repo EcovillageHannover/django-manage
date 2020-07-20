@@ -24,11 +24,9 @@ except ImportError:
 
 class M3Sync(object):
 
-    __attrs = ['subscriber', 'owner', 'moderator']
     logger = logging.getLogger('Mailman3Sync')
 
     def __init__(self, config):
-
         self.sync = dict(config.items('sync'))
         self.config = config
 
@@ -146,6 +144,51 @@ class M3Sync(object):
                 self.logger.info(
                     "Result of hoook {0} is {1}".format(name, result))
 
+    def get_ldap_group(self, name):
+        for group in self.ldap.entries:
+            group_name = re.sub(
+                r'\s+', '.', getattr(group, self.sync['group_name_attr']).value)
+            if group_name == name:
+                break
+        else:
+            return None
+
+        # regex was taken from http://emailregex.com/
+        email_re = re.compile(
+            r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+        
+        ret = {}
+        for ldap_attr, mailman_attr in [('member', 'subscriber'),
+                                        ('owner', 'owner'),
+                                        ('owner', 'moderator')]:
+            ret[mailman_attr] = []
+            print(group)
+            for dn in getattr(group, ldap_attr):
+                # if it's not email form then search by it's DN. this is used if quering group member agains AD
+                email = None
+                if email_re.search(dn):
+                    email = dn
+                else:
+                    self.ldap.search(
+                        dn,
+                        self.sync['member_filter'],
+                        attributes=[self.sync['mail_attr']],
+                        search_scope=BASE
+                    )
+                    email = getattr(
+                        self.ldap.entries[0], self.sync['mail_attr']).value
+
+                if not email:
+                    self.logger.warning('LDAP data for {}, is not an email or it doesn\'t has email attribute'.format(dn))
+                    continue
+
+                if 'replace_mail_domain' in self.sync and self.sync['replace_mail_domain']:
+                    email = re.sub(r'@.*?$', '@{}'.format(self.sync['replace_mail_domain']), email)
+
+                # lower case the email
+                ret[mailman_attr].append(email.lower())
+        return ret
+
     def main(self):
         # find group
         ret_attr = [
@@ -158,56 +201,30 @@ class M3Sync(object):
             attributes=ret_attr
         )
 
-        # regex was taken from http://emailregex.com/
-        email_re = re.compile(
-            r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
 
+        print(self.get_ldap_group('team-digitales'))
         ldap_data = {}
-
 
         for group in self.ldap.entries:
             # change all space to dot for group name
-            list_name = re.sub(
-                r'\s+', '.', getattr(group, self.sync['group_name_attr']).value)
-
+            pass
+            
+        return
+        for i in range(0,100):
+            
             if not self.config.has_section(f'sync.{list_name}'):
                 self.logger.debug(f'Skipping unconfigured group {list_name}')
                 continue
             
-            list_data = dict(
-                zip(self.__attrs, [[] for x in range(len(self.__attrs))])
-            )
+            #list_data = dict(
+            #    zip(self.__attrs, [[] for x in range(len(self.__attrs))])
+            #)
             list_data['strict_sync'] = self.config.getboolean(f'sync.{list_name}', 'strict_sync')
             list_data['config'] = dict(self.config.items(f'sync.{list_name}'))
             ldap_data[self.get_list(list_name)] = list_data
 
 
-            for attr in self.__attrs:
-                for dn in getattr(group, self.sync['{0}_attr'.format(attr)]):
-                    # if it's not email form then search by it's DN. this is used if quering group member agains AD
-                    email = None
-                    if email_re.search(dn):
-                        email = dn
-                    else:
-                        self.ldap.search(
-                            dn,
-                            self.sync['member_filter'],
-                            attributes=[self.sync['mail_attr']],
-                            search_scope=BASE
-                        )
-                        email = getattr(
-                            self.ldap.entries[0], self.sync['mail_attr']).value
-
-                    if not email:
-                        self.logger.warning('LDAP data for {}, is not an email or it doesn\'t has email attribute'.format(dn))
-                        continue
-
-                    if 'replace_mail_domain' in self.sync and self.sync['replace_mail_domain']:
-                        email = re.sub(r'@.*?$', '@{}'.format(self.sync['replace_mail_domain']), email)
-
-                    # lower case the email
-                    ldap_data[self.get_list(list_name)][attr].append(
-                        email.lower())
+            
 
         # make sure default domain exist
         self.logger.info('Creating default list domain: {0}'.format(

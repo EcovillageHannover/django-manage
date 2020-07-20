@@ -264,7 +264,7 @@ Team Digitales -- Lottofee.
             print(f"# {item} zusagen: {len(item_assignments[item])}/ absagen: {len(absagen[item])}")
 
             # print((item.value, [u.username for u in item_assignments[item]]))
-            # print("Bcc:", ", ".join(map(self.mail, item_assignments[item])))
+            print("Bcc:", ", ".join(map(self.mail, item_assignments[item])))
 
             for user in item_assignments[item]:
                 self.zusage(user, item)
