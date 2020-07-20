@@ -65,7 +65,7 @@ class PollForm(forms.ModelForm):
     def show_results(self):
         pc = self.instance.poll_collection
         normal_view = pc.can_analyze(self.user) \
-            and (self.user_voted or not self.pc.is_active)
+            and (self.user_voted or (not pc.is_active))
         edit_view = pc.can_change(self.user) or self.user.is_superuser
         return normal_view or edit_view
 

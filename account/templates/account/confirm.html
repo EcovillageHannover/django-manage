@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% load bootstrap4 %}
+
+{% block title %}
+{{title|default:"Aktion bestätigen"}}
+{% endblock %}
+
+
+{% block content %}
+<p>{{question | safe}}</p>
+
+<form method="post">{% csrf_token %}
+  <button class="btn btn-danger" type="submit">{{yes|default:"Ja"}}</button>
+  <a href="{{next}}" class="btn btn-success">{{no|default:"Nein"}}</a>
+  
+  <input type="hidden" name="next" value="{{ next }}" />
+</form>
+
+{% endblock %}

@@ -68,8 +68,22 @@ def make_token(account):
     assert fields == parse_token(config.SECRET_KEY, token)
     token = token.decode('utf-8')
     return token
-    
+
+def update_invite(account):
+    invite = Invite.find_by_mail(account.email)
+    groups = set((invite.groups or "").split(","))
+    groups = groups | set(account.group)
+    groups -= set(['stadt-hannover', ''])
+    logger.info(groups)
+    group_str = ",".join(sorted([x for x in groups]))
+    if group_str != invite.groups:
+        invite.groups = group_str
+        invite.save()
+    account.group = list(groups)
+    return invite.count
+
 def send_invite_mail(account, msgid=False, preface=None):
+    update_invite(account)
     token = make_token(account)
 
     context = dict(
@@ -102,7 +116,7 @@ def send_invite_mail(account, msgid=False, preface=None):
     invite.count += 1
     invite.save()
 
-    print(f"Sent mail to: {receiver} (try: {invite.count})")
+    logger.info(f"Sent mail to: {receiver} (try: {invite.count})")
 
 
 
@@ -204,16 +218,8 @@ class Command(BaseCommand):
 
         invite_count = {}
         for a in accounts:
-            invite = Invite.find_by_mail(a.email)
-            invite_count[a.username] = invite.count
-            groups = set((invite.groups or "").split(","))
-            groups = groups | set(a.group)
-            groups -= set(['stadt-hannover', ''])
-            group_str = ",".join(sorted([x for x in groups]))
-            if group_str != invite.groups:
-                invite.groups = group_str
-                invite.save()
-            a.group = list(groups)
+            invite_count[account.username] = update_invite(a)
+
 
         if not options['filter:all']:
             if options['filter:maxtry']:

@@ -9,16 +9,33 @@ Benutzerprofil
 
 {% block content %}
 <p>
-  <strong>Benutzername:</strong> {{user.username}}<br/>
-  <strong>Eigene Gruppen:</strong><ul>
-    {% for group in user.ldap_user.group_names %}
-    {% if group != 'ldap-user' %}
-    <li>{{group}}</li>
-    {% endif %}
-    {% endfor %}
-    </ul>
+  <strong>Benutzername:</strong> {{user.username}}
 </p>
 
+<div class="row">
+  <div class="col-md-6">
+    <div class="card m-2 p-2">
+      <strong>Du bist Mitglied in folgenden Gruppen:</strong><ul>
+        {% for group in user.ldap_user.group_names %}
+        {% if group != 'ldap-user' %}
+        <li>{{group}}</li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% if own_groups %}
+  <div class="col-md-6">
+    <div class="card m-2 p-2">
+      <strong>Du verwaltest folgende Gruppen:</strong><ul>
+        {% for group in own_groups %}
+        <li><a href="{% url 'account:group' group%}">{{group}}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</div>
 <p>
   <a class="btn btn-primary" href="{% url 'account:logout'%}">Logout</a>
 </p>

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% load bootstrap4 %}
+
+{% block title %}
+Gruppe: {{group}}
+{% endblock %}
+
+
+{% block content %}
+  <div class="container">
+
+{% if False %}
+
+<h2>Kommunikationswerkzeuge</h2>
+<form method="POST" action="{% url 'account:edit_group' group.name %}">
+  {% csrf_token %}
+  {% bootstrap_form group_profile_form layout='inline' %}
+  {% bootstrap_button "Speichern" button_type="submit" button_class="btn-info" %}
+</form>
+{% endif%}
+
+<h2>Mitglieder</h2>
+
+<p>Mitglieder einer Gruppe sind Menschen, die bei der Gruppe mitarbeiten wollen. Wenn du jemanden Mitglieder einer Gruppe machst, so erhält dieser Mensch <strong>erweiterte Rechte</strong>. Daher ist die Gruppenmitgliedschaft vom reinen Interesse an einer Gruppe zu unterscheiden. Ein guter Indikator für Gruppenmitgliedschaft, ist das mehrfache Besuchen eines Gruppentreffens.</p>
+
+<h3>Mitglied hinzufügen</h3>
+<p>Wenn ein Teilnehmer bereits einen EVH-Account hat, kannst du ihn über das folgende Feld der Gruppe hinzufügen!</p>
+<form method="GET" action="{% url 'account:group_member_add' group.name %}">
+  {% csrf_token %}
+  <div class="form-group row mt-4">
+    <div class="col-md-8">
+      <input type="text" class="form-control" name="user" placeholder="Nutzername oder E-Mailaddresse">
+    </div>
+    <div class="col-md-2">
+      {% bootstrap_button "Hinzufügen" button_type="submit" button_class="btn-info" %}
+    </div>
+  </div>
+</form>
+
+
+<h3>Mitglied einladen</h3>
+<p>Wenn ein Teilnehmer noch <strong>keinen EVH-Account hat</strong>, kannst du ihm einen Einladungslink schicken, über den sie/er einen EVH-Account anlegen kann und direkt Mitglied der Gruppe wird.</p>
+<form method="GET" action="{% url 'account:group_member_invite' group.name %}">
+  {% csrf_token %}
+  <div class="form-group row mt-4">
+    <div class="col-md-3">
+      <input type="text" class="form-control" name="vorname" placeholder="Vorname">
+    </div>
+    <div class="col-md-3">
+      <input type="text" class="form-control" name="nachname" placeholder="Nachname">
+    </div>
+    <div class="col-md-3">
+      <input type="email" class="form-control" name="email" placeholder="E-Mailaddresse">
+    </div>
+    <div class="col-md-2">
+      {% bootstrap_button "Einladen" button_type="submit" button_class="btn-info" %}
+    </div>
+  </div>
+</form>
+
+
+<h3>Mitgliedsliste</h3>
+<table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Vorname</th>
+        <th>Nachname</th>
+        <th>Username</th>
+        <th>Aktion</th>
+
+      </tr>
+    </thead>
+    <tbody>
+      {% for member in members %}
+        <tr>
+          <td>{{member.vorname}}</td>
+          <td>{{member.nachname}}</td>
+          <td>{{member.username}}</td>
+          <td><a href="{% url 'account:group_member_remove' group.name member.username %}?next={{request.path}}"><span class="badge badge-danger">Entfernen</span></a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+{% endblock %}

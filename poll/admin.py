@@ -112,7 +112,7 @@ class PollItemInline(admin.TabularInline):
         return True
 
     def has_delete_permission(self, request, obj):
-        return obj.votes == 0
+        return True
 
     fields = (('value', 'position'),)
     readonly_fields = ('vote_count',)

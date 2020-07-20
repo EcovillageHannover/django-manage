@@ -1,8 +1,10 @@
 # coding: utf-8
 
 from django_auth_ldap.backend import LDAPBackend
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import Group
+from django.forms import modelform_factory
 from django.shortcuts import render
 from django.template import loader
 from django.contrib import messages
@@ -14,6 +16,7 @@ from passlib.hash import ldap_md5_crypt
 import logging
 from django.contrib.auth.decorators import login_required
 from django.utils.http import urlsafe_base64_decode
+from django.urls import reverse
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
 from account.signals import user_changed
@@ -21,7 +24,7 @@ from account.signals import user_changed
 
 
 import evh.settings as config
-from .models import parse_token, Invite, ldap_addgroup
+from .models import parse_token, Invite, ldap_addgroup, LDAP, GroupProfile, make_username
 from .forms import *
 
 
@@ -241,5 +244,174 @@ def profile(request):
     user_changed.send(sender=profile, username=request.user.username)
     user = LDAPBackend().populate_user(request.user.username)
     return render(request, 'account/profile.html', {
-        'user': user
+        'user': user,
+        'own_groups': LDAP().owned_groups(user.username),
     })
+
+################################################################
+# Group
+def __resolve_group(request, group):
+    groups = Group.objects.filter(name=group)
+    if len(groups) != 1:
+        return HttpResponse('NotFound', status=404)
+
+    #if not request.user.is_superuser:
+    if groups[0] not in LDAP().owned_groups(request.user.username):
+        return HttpResponse('Permission denied', status=403)
+
+    return groups[0]
+
+@login_required
+def group(request, group):
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+
+
+    GroupProfileForm = modelform_factory(GroupProfile,
+                                               fields=('mailinglist_intern',
+                                                       'mailinglist_announce'))
+
+    if request.method == 'POST':
+        form = GroupProfileForm(request.POST)
+        if form.is_valid():
+            profile = form.save(commit=False)
+            profile.group = group
+            profile.save()
+        else:
+            return HttpResponse('Bad Form', status=503)
+    else:
+        profile, _ = GroupProfile.objects.get_or_create(group=group)
+    
+    return render(request, 'account/group.html', {
+        'group': group,
+        'group_profile_form': GroupProfileForm(instance=profile),
+        'members': LDAP().group_members(group),
+    })
+
+
+@login_required
+def group_member_remove(request, group, user):
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+
+    members = LDAP().group_members(group)
+    for member in members:
+        if member["username"] == user:
+            break
+    else:
+        return HttpResponse('Group Member not found', status=404)
+
+    if request.method == 'POST':
+        if LDAP().group_member_change(group, user, mode="remove"):
+            messages.add_message(request, messages.SUCCESS,
+                                 f"Nutzer {user} entfernt.")
+
+            user_changed.send(sender=group_member_add, username=user)
+        else:
+            messages.add_message(request, messages.ERROR,
+                                 f"Nutzer {user} entfernen fehlgeschlagen.")
+        return HttpResponseRedirect(request.POST['next'])
+
+
+    return render(request, 'account/confirm.html', dict(
+        title="Gruppenmitglied entfernen?",
+        question=f"Soll der Nutzer <strong>{user}</strong> aus der Gruppe {group} entfernt werden?",
+        yes="Ja, Mitglied entfernen",
+        next=reverse('account:group', args=[group])
+    ))
+
+@login_required
+def group_member_add(request, group):
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+    group_url = reverse('account:group', args=[group])
+
+    user = request.GET.get("user", "")
+    User = LDAP().search_user(user)
+    if not User:
+        messages.add_message(request, messages.ERROR,
+                             f"Nutzer '{user}' nicht gefunden!")
+        return HttpResponseRedirect(group_url)
+
+    username = User["username"]
+    full_name = "%s %s (%s)" %(User["vorname"], User["nachname"], User["username"])
+
+    
+    members = LDAP().group_members(group)
+    for member in members:
+        if member["username"] == username:
+            messages.add_message(request, messages.INFO,
+                                 f"Nutzer {full_name} ist bereits in der Gruppe!")
+            return HttpResponseRedirect(group_url)
+
+    if request.method == 'POST':
+        if LDAP().group_member_change(group, username, mode="add"):
+            messages.add_message(request, messages.SUCCESS,
+                                 f"Nutzer {username} hinzugefügt.")
+
+            user_changed.send(sender=group_member_add, username=username)
+        else:
+            messages.add_message(request, messages.ERROR,
+                                 f"Nutzer {username} hinzufügen fehlgeschlagen.")
+
+        return HttpResponseRedirect(request.POST['next'])
+
+
+    return render(request, 'account/confirm.html', dict(
+        title="Gruppenmitglied hinzufügen?",
+        question=f"Soll der Nutzer <strong>{full_name}</strong> der Gruppe {group} hinzugefügt werden?",
+        yes="Ja, Mitglied hinzufügen?",
+        next=group_url
+    ))
+
+
+from .management.commands.invite import AccountInformation, send_invite_mail
+
+@login_required
+def group_member_invite(request, group):
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+    group_url = reverse('account:group', args=[group])
+
+    email = request.GET.get("email", "").strip()
+    vorname = request.GET.get("vorname", "").strip()
+    nachname = request.GET.get("nachname", "").strip()
+    if not email or not vorname or not nachname:
+        messages.add_message(request, messages.ERROR,
+                                 f"Vorname, Nachname UND E-Mailaddresse werden zum Einladen benötigt.")
+        return HttpResponseRedirect(group_url)
+    username = make_username(vorname, nachname)
+
+    
+
+    user = LDAP().search_user(email)
+    user = user or LDAP().search_user(username)
+    if user:
+        username = user["username"]
+        messages.add_message(request, messages.INFO,
+                                 f"Nutzer hat bereits einen Account (oder es gibt eine Namensdopplung): {username}")
+        return HttpResponseRedirect(group_url)
+
+    # Send Invite Mail
+    if request.method == 'POST':
+        account = AccountInformation(
+            vorname=vorname,
+            nachname=nachname,
+            username=username,
+            email=email,
+            group=[group.name])
+        send_invite_mail(account)
+        messages.add_message(request, messages.INFO,
+                                 f"Einladung verschickt!")
+        return HttpResponseRedirect(group_url)
+
+    return render(request, 'account/confirm.html', dict(
+        title="Nutzer zum EVH einladen?",
+        question=f"Es soll <strong>{vorname} {nachname} &lt;{email}&gt;</strong> eingeladen werden. Dieser erhält durch diese Einladung eine Mail, mit der er/sie sich einen EVH-Account erstellen kann, der sofort zur Gruppe <strong>{group}</strong> hinzugefügt wird? ",
+        yes="Ja, Mensch einladen!",
+        next=group_url
+    ))

@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm as DjangoPasswordResetForm
 from django.contrib.auth import get_user_model
+from django.forms import ModelForm
+from .models import GroupProfile
 
 UserModel = get_user_model()
 
@@ -22,3 +24,4 @@ class PasswordResetForm(DjangoPasswordResetForm):
             'is_active': True,
         })
         return active_users
+
