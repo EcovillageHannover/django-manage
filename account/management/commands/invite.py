@@ -74,7 +74,7 @@ def update_invite(account):
     groups = set((invite.groups or "").split(","))
     groups = groups | set(account.group)
     groups -= set(['stadt-hannover', ''])
-    logger.info(groups)
+    # logger.info(groups)
     group_str = ",".join(sorted([x for x in groups]))
     if group_str != invite.groups:
         invite.groups = group_str
@@ -218,7 +218,7 @@ class Command(BaseCommand):
 
         invite_count = {}
         for a in accounts:
-            invite_count[account.username] = update_invite(a)
+            invite_count[a.username] = update_invite(a)
 
 
         if not options['filter:all']:

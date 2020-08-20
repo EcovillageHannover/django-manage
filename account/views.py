@@ -19,13 +19,14 @@ from django.utils.http import urlsafe_base64_decode
 from django.urls import reverse
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
-from account.signals import user_changed
+from account.signals import user_changed, group_changed
 
 
 
 import evh.settings as config
 from .models import parse_token, Invite, ldap_addgroup, LDAP, GroupProfile, make_username
 from .forms import *
+from .mailman import Mailman
 
 
 # Get an instance of a logger
@@ -282,11 +283,17 @@ def group(request, group):
             return HttpResponse('Bad Form', status=503)
     else:
         profile, _ = GroupProfile.objects.get_or_create(group=group)
-    
+
+    # Mailinglist
+    m3 = Mailman()
+    mlists = m3.get_lists()
+
     return render(request, 'account/group.html', {
         'group': group,
         'group_profile_form': GroupProfileForm(instance=profile),
         'members': LDAP().group_members(group),
+        'mlist_discuss': mlists.get(f"{group}"),
+        'mlist_news': mlists.get(f"{group}-news"),
     })
 
 
@@ -308,7 +315,8 @@ def group_member_remove(request, group, user):
             messages.add_message(request, messages.SUCCESS,
                                  f"Nutzer {user} entfernt.")
 
-            user_changed.send(sender=group_member_add, username=user)
+            user_changed.send(sender=group_member_remove, username=user)
+            group_changed.send(sender=group_member_remove, group=group)
         else:
             messages.add_message(request, messages.ERROR,
                                  f"Nutzer {user} entfernen fehlgeschlagen.")
@@ -353,6 +361,7 @@ def group_member_add(request, group):
                                  f"Nutzer {username} hinzugefügt.")
 
             user_changed.send(sender=group_member_add, username=username)
+            group_changed.send(sender=group_member_add, group=group)
         else:
             messages.add_message(request, messages.ERROR,
                                  f"Nutzer {username} hinzufügen fehlgeschlagen.")

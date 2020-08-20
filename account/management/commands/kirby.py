@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from account.models import *
 import evh.settings_local as config
 from pathlib import Path
-from account.signals import user_changed
+from account.signals import *
 from datetime import datetime
 import os
 
@@ -16,10 +16,9 @@ class Command(BaseCommand):
     help = 'Update Kirby Accounts'
 
     def handle(self, *args, **options):
-        users = ldap_users()
-        for username, user in users.items():
-            user_changed.send(sender=self.__class__, username=username)
+        #users = ldap_users()
         #for username, user in users.items():
-        #    date = datetime.strptime(user["createTimestamp"][0].decode()[:8], "%Y%m%d")
-        #    if date.month != 6:
-        #        print("{} <{}>,".format(user['displayName'][0].decode(), user['mail'][0].decode()))
+        #    user_changed.send(sender=self.__class__, username=username)
+
+        for group in LDAP().groups():
+            group_changed.send(sender=self.__class__, group=group)

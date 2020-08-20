@@ -8,3 +8,4 @@ django-markdownify
 django-taggit
 django-impersonate
 psycopg2
+mailmanclient

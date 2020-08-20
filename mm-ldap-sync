@@ -12,7 +12,7 @@ import logging
 import traceback
 from pprint import pprint
 from mailmanclient import Client as Mailman3Client
-from colorlog import ColoredFormatter
+#from colorlog import ColoredFormatter
 from six.moves.urllib_error import HTTPError
 from ldap3 import Server, Connection, ALL, ALL_ATTRIBUTES, BASE
 try:
@@ -200,6 +200,8 @@ class M3Sync(object):
             self.sync['group_filter'],
             attributes=ret_attr
         )
+
+        print(self.m3.get_domain("list.my-evh.de").lists)
 
 
         print(self.get_ldap_group('team-digitales'))

@@ -103,6 +103,13 @@ class LDAP:
                    ("sn", "nachname"), ("mail", "mail")]
         return {t: entry.get(f, [b""])[0].decode() for f,t in mapping}
 
+    def groups(self):
+        ldap_filter = f"{settings.AUTH_LDAP_GROUP_DN}"
+        ret = self.conn.search_s(settings.AUTH_LDAP_GROUP_DN,
+                                 ldap.SCOPE_SUBTREE,
+                                 "(|(objectClass=groupOfNames))", ["cn"])
+        return [e["cn"][0].decode() for dn, e in ret]
+
     def owned_groups(self, user):
         ldap_filter = f"(owner=cn={user},{settings.AUTH_LDAP_USER_DN})"
         ret = self.conn.search_s(settings.AUTH_LDAP_GROUP_DN,
@@ -118,12 +125,22 @@ class LDAP:
             groups.append(group)
         return groups
 
+    def group_owners(self, group):
+        ret = self.conn.search_s(settings.AUTH_LDAP_GROUP_DN,
+                                 ldap.SCOPE_SUBTREE,
+                                 f"cn={group}", ["owner"])
+
+        owners = [x.decode().split(",")[0].split("=")[1] for x in ret[0][1].get('owner', [])]
+        owners = list(map(self.search_user, owners))
+        return owners
+
+
     def group_members(self, group):
         ldap_filter = f"(memberOf=cn={group},{settings.AUTH_LDAP_GROUP_DN})"
         ret = self.conn.search_s(settings.AUTH_LDAP_USER_DN,
                                  ldap.SCOPE_SUBTREE,
                                  ldap_filter,
-                                 ["cn", "givenName", "sn", "email"])
+                                 ["cn", "givenName", "sn", "mail"])
 
         return sorted([self.__from_user(entry) for _, entry in ret],
                       key=lambda x: x["username"])
@@ -133,7 +150,7 @@ class LDAP:
         ret = self.conn.search_s(settings.AUTH_LDAP_USER_DN,
                                  ldap.SCOPE_SUBTREE,
                                  ldap_filter,
-                                 ["cn", "givenName", "sn", "email"])
+                                 ["cn", "givenName", "sn", "mail"])
 
         if len(ret) == 1:
             return self.__from_user(ret[0][1])

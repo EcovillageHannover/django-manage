@@ -110,11 +110,22 @@ Team Digitales -- Lottofee.
                        recipient_list=['support@my-evh.de', user.email],
                        fail_silently=False)
 
+    def windhund(self, poll):
+        items = Item.objects.filter(poll=poll)
+        for item in items:
+            if not ('2. September' in str(item) or '3. September' in str(item)):
+                continue
+            for vote in Vote.objects.filter(item=item):
+                print(vote.user.email, item)
+                
     def handle(self, *args, **options):
         self.args = args
         self.options = options
         
         poll = Poll.objects.get(pk=int(options['poll']))
+        if poll.poll_type != Poll.PRIO:
+            self.windhund(poll)
+            return
         assert poll.poll_type == Poll.PRIO
         items = Item.objects.filter(poll=poll)
 
