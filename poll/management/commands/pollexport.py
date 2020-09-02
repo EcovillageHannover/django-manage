@@ -15,8 +15,30 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         # Sources
         parser.add_argument("--pc", help="PollCollection ID to lottery on")
+        parser.add_argument("--poll", help="Poll ID to export data", type=int)
+
+    def export_poll(self, poll):
+        votes = Vote.objects.filter(poll=poll)
+        out = csv.writer(sys.stdout)
+        out.writerow(
+            ["Vorname", "Nachname", "E-Mail", "Auswahl", "Abstimmungszeitpunkt"]
+        )
+        for vote in votes:
+            out.writerow([
+                vote.user.first_name,
+                vote.user.last_name,
+                vote.user.email,
+                vote.item.export_key or vote.item.value,
+                vote.updated_at.strftime("%d.%m.%Y %H:%M")
+            ])
+
+
 
     def handle(self, *args, **options):
+        if options['poll']:
+            self.export_poll(options['poll'])
+            return
+        
         polls = []
         polls.extend(list(PollCollection.objects.get(pk=int(options['pc'])).polls.all()))
 

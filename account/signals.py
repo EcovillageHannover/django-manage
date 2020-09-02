@@ -34,8 +34,10 @@ def user_changed_hook(sender, **kwargs):
     index_php = directory / "index.php"
     if groups & set(['genossenschaft',
                      'wettbewerb-jury',
+                     'wettbewerb-externe',
                      'amsel-kollektiv',
-                     'vorstand']):
+                     'vorstand',
+                     'mitarbeiterinnen']):
         if not os.path.exists(directory):
             os.mkdir(directory)
 

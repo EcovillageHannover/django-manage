@@ -2,11 +2,13 @@
 
 import base64
 import hmac
+import os
 import hashlib
 import ldap
 # Create your models here.
 
 from django.db import models
+import django.dispatch
 from django.db.models.manager import Manager
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -14,6 +16,8 @@ from django.db.models import Count
 from django.conf import settings
 from collections import namedtuple
 from taggit.managers import TaggableManager
+from django.core.signals import request_finished
+from django_auth_ldap.backend import LDAPBackend
 
 import logging
 logger = logging.getLogger(__name__)
@@ -69,13 +73,27 @@ def make_username(vorname, nachname):
     return username
 
 
-conn = None
+################################################################
+# LDAP
+ldap_conn = None
 def ldap_connect():
-    global conn
-    if not conn:
-        conn = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
-        conn.simple_bind_s(settings.AUTH_LDAP_BIND_DN, settings.AUTH_LDAP_BIND_PASSWORD)
-    return conn
+    global ldap_conn
+    if not ldap_conn:
+        ldap_conn = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
+        ldap_conn.simple_bind_s(settings.AUTH_LDAP_BIND_DN, settings.AUTH_LDAP_BIND_PASSWORD)
+    return ldap_conn
+
+from django.core.signals import request_finished
+
+@django.dispatch.receiver(request_finished) 
+def ldap_close_connection(*args, **kwargs):
+    global ldap_conn
+    if ldap_conn is not None:
+        logger.info("Close own ldap_connect connection %s", ldap_conn)
+        ldap_conn.unbind_s()
+        ldap_conn = None
+
+
 
 def __get_cn(dn):
     return dn.decode().split(',')[0].split('=')[1]
@@ -95,7 +113,14 @@ def ldap_users():
 
 class LDAP:
     def __init__(self):
-        self.conn = ldap_connect()
+        self.conn = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
+        self.conn.simple_bind_s(settings.AUTH_LDAP_BIND_DN,
+                                settings.AUTH_LDAP_BIND_PASSWORD)
+
+    def __del__(self):
+        logger.info("Close LDAP() Connection")
+        fd = self.conn.fileno()
+        self.conn.unbind_s()
 
     def __from_user(self, entry):
         User = namedtuple("LDAPUser", ["vorname", "nachname", "username", "mail"])
@@ -166,7 +191,7 @@ class LDAP:
             raise RuntimeError(f"Invalid mode: {mode}")
 
         try:
-            conn.modify_s(group_dn, modlist)
+            self.conn.modify_s(group_dn, modlist)
             logger.info(f"{mode}: user {username} in group {group} ")
             return True
         except Exception as e:

@@ -16,9 +16,9 @@ class Command(BaseCommand):
     help = 'Update Kirby Accounts'
 
     def handle(self, *args, **options):
-        #users = ldap_users()
-        #for username, user in users.items():
-        #    user_changed.send(sender=self.__class__, username=username)
+        users = ldap_users()
+        for username, user in users.items():
+            user_changed.send(sender=self.__class__, username=username)
 
         for group in LDAP().groups():
             group_changed.send(sender=self.__class__, group=group)

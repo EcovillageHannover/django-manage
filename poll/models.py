@@ -166,6 +166,7 @@ class Poll(models.Model):
 
 class Item(models.Model):
     value = models.CharField(max_length=255, unique=False)
+    export_key = models.CharField(max_length=255, blank=True, null=True, unique=False)
     position = models.SmallIntegerField(default=1)
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
 
@@ -195,7 +196,7 @@ class Vote(models.Model):
     item = models.ForeignKey(Item, verbose_name='voted item', null=True,
                              on_delete=models.CASCADE)
     text = models.TextField(default="", blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

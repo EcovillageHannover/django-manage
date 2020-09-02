@@ -16,7 +16,7 @@ Benutzerprofil
   <div class="col-md-6">
     <div class="card m-2 p-2">
       <strong>Du bist Mitglied in folgenden Gruppen:</strong><ul>
-        {% for group in user.ldap_user.group_names %}
+        {% for group in groups %}
         {% if group != 'ldap-user' %}
         <li>{{group}}</li>
         {% endif %}

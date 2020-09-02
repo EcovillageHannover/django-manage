@@ -23,6 +23,7 @@ from account.signals import user_changed, group_changed
 
 
 
+
 import evh.settings as config
 from .models import parse_token, Invite, ldap_addgroup, LDAP, GroupProfile, make_username
 from .forms import *
@@ -244,9 +245,11 @@ def password_reset(request, uidb64, token):
 def profile(request):
     user_changed.send(sender=profile, username=request.user.username)
     user = LDAPBackend().populate_user(request.user.username)
+    user = request.user
     return render(request, 'account/profile.html', {
-        'user': user,
-        'own_groups': LDAP().owned_groups(user.username),
+        'user': request.user,
+        'groups': [group.name for group in user.groups.all()],
+        'own_groups':  LDAP().owned_groups(user.username),
     })
 
 ################################################################

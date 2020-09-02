@@ -26,14 +26,19 @@ class Mailman:
             dmarc_mitigate_action="munge_from",
             subscription_policy="confirm",
             reply_goes_to_list="point_to_list",
+            allow_list_posts=True,
+            default_nonmember_action="accept",
         )
         if not strict:
             config['subscription_policy'] = "open"
             config["allow_list_posts"] = False
+            config["default_nonmember_action"]="reject"
+
 
 
         if mlist.list_name in ('vorstand', 'aufsichtsrat'):
             config['archive_policy'] = 'never'
+            print(mlist.settings)
 
         
         # Write some settings

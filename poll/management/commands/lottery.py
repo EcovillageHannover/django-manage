@@ -113,10 +113,12 @@ Team Digitales -- Lottofee.
     def windhund(self, poll):
         items = Item.objects.filter(poll=poll)
         for item in items:
-            if not ('2. September' in str(item) or '3. September' in str(item)):
-                continue
+            #if ('zurück' in str(item).lower()):
+            #if not ('1. september' in str(item).lower()):
+            #    continue
             for vote in Vote.objects.filter(item=item):
-                print(vote.user.email, item)
+                #print(f"{vote.user.get_full_name()} <{vote.user.email}>,", end=' ')
+                print(f"{vote.user.get_full_name()}")
                 
     def handle(self, *args, **options):
         self.args = args
