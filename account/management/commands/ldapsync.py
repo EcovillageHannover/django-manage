@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Update Kirby Accounts'
+    help = 'Sync Account/Group Information with outside world'
     def add_arguments(self, parser):
         parser.add_argument("--user", '-u', default=None,
                             help="Update only User")
