@@ -113,6 +113,7 @@ def ldap_users():
 
 class LDAP:
     def __init__(self):
+        # self.conn is a well known name
         self.conn = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
         self.conn.simple_bind_s(settings.AUTH_LDAP_BIND_DN,
                                 settings.AUTH_LDAP_BIND_PASSWORD)

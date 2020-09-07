@@ -18,27 +18,37 @@ class Mailman:
         domain = self.m3.get_domain(settings.MAILMAN_LIST_DOMAIN)
         return {mlist.list_name: mlist for mlist in domain.lists}
 
-    def config_list(self, mlist, strict=True):
+    def config_list(self, mlist, type, **kwargs):
         config = dict(
             send_welcome_message=False,
             archive_policy="private",
             preferred_language="de",
             dmarc_mitigate_action="munge_from",
-            subscription_policy="confirm",
-            reply_goes_to_list="point_to_list",
-            allow_list_posts=True,
-            default_nonmember_action="accept",
+            max_message_size=1024,
         )
-        if not strict:
+        config.update(kwargs)
+        if type == "discuss":
+            config['subscription_policy'] = "confirm"
+            config["allow_list_posts"] = True
+            config['reply_goes_to_list'] = "point_to_list"
+            config['default_member_action'] = "accept"
+            config['default_nonmember_action'] = "accept"
+            config['advertised'] = False
+
+
+        elif type == "news":
             config['subscription_policy'] = "open"
             config["allow_list_posts"] = False
-            config["default_nonmember_action"]="reject"
-
-
+            config['reply_goes_to_list'] = "no_munging"
+            config["default_member_action"] = "hold"
+            config["default_nonmember_action"] = "hold"
+            config['advertised'] = True
 
         if mlist.list_name in ('vorstand', 'aufsichtsrat'):
             config['archive_policy'] = 'never'
-            print(mlist.settings)
+
+        #for k,v in mlist.settings.items():
+        #    logger.info(f"{k}: {v}")
 
         
         # Write some settings
@@ -53,10 +63,10 @@ class Mailman:
 
 
     def sync_list(self, mlist, members, owners=None, strict=True):
-        members_mails = set([u['mail'] for u in members])
-        subscriber_mails = set([m.address.email for m in mlist.members])
+        members_mails = set([u['mail'].lower() for u in members])
+        subscriber_mails = set([m.address.email.lower() for m in mlist.members])
 
-        def sync_tag(tag, should_set, is_set, add, remove):
+        def sync_tag(tag, should_set, is_set, add, remove, strict=True):
             for element in should_set - is_set:
                 logger.info(f"Add[{tag}] {element} to list {mlist}")
                 add(element)
@@ -73,17 +83,17 @@ class Mailman:
                                                    pre_verified=True,
                                                    pre_confirmed=True,
                                                    pre_approved=True),
-                 remove=lambda subscriber: mlist.unsubscribe(subscriber))
+                 remove=lambda subscriber: mlist.unsubscribe(subscriber),
+                 strict=strict)
 
         if owners:
-            owner_mails = set([u['mail'] for u in owners])
-            moderator_mails = set([m.address.email for m in mlist.moderators])
+            owner_mails = set([u['mail'].lower() for u in owners])
+            moderator_mails = set([m.address.email.lower() for m in mlist.moderators])
             sync_tag('moderator', owner_mails, moderator_mails,
                      add=lambda mail: mlist.add_moderator(mail),
                      remove=lambda mail: mlist.remove_moderator(mail))
 
-            if not strict:
-                m3_owner_mails = set([m.address.email for m in mlist.owners])
-                sync_tag('owner', owner_mails, m3_owner_mails,
-                         add=lambda mail: mlist.add_owner(mail),
-                        remove=lambda mail: mlist.remove_owner(mail))
+            m3_owner_mails = set([m.address.email for m in mlist.owners])
+            sync_tag('owner', owner_mails, m3_owner_mails,
+                     add=lambda mail: mlist.add_owner(mail),
+                     remove=lambda mail: mlist.remove_owner(mail))

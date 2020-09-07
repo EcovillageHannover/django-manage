@@ -260,7 +260,8 @@ def __resolve_group(request, group):
         return HttpResponse('NotFound', status=404)
 
     #if not request.user.is_superuser:
-    if groups[0] not in LDAP().owned_groups(request.user.username):
+    if groups[0] not in LDAP().owned_groups(request.user.username) \
+       and not request.user.is_superuser:
         return HttpResponse('Permission denied', status=403)
 
     return groups[0]

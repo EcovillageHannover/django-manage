@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import django.dispatch
 from django_auth_ldap.backend import LDAPBackend
 from django.conf import settings
@@ -37,7 +39,8 @@ def user_changed_hook(sender, **kwargs):
                      'wettbewerb-externe',
                      'amsel-kollektiv',
                      'vorstand',
-                     'mitarbeiterinnen']):
+                     'mitarbeiterinnen']) or \
+        user.username in set(['ina-marie.kapitola']):
         if not os.path.exists(directory):
             os.mkdir(directory)
 
@@ -68,6 +71,8 @@ def group_changed_hook(sender, **kwargs):
     mlist_discuss = f"{group}"
     mlist_news = f"{group}-news"
 
+    group_name = str(group).title().replace("Ag-", "AG-").replace("Evh", "EVH")
+
     if mlist_discuss in mlists or mlist_news in mlists:
         l = LDAP()
         members = l.group_members(group)
@@ -76,13 +81,19 @@ def group_changed_hook(sender, **kwargs):
         if mlist_discuss in mlists:
             mlist = mlists[mlist_discuss]
             logger.info(f"Sync Mailinglist {mlist}")
-            m3.config_list(mlist, strict=True)
+            m3.config_list(mlist, type="discuss",
+                           display_name=f"{group_name}",
+                           subject_prefix=f"[{group_name}] ",
+                           )
             m3.sync_list(mlist, members=members, owners=owners, strict=True)
 
         if mlist_news in mlists:
             mlist = mlists[mlist_news]
             logger.info(f"Sync Mailinglist {mlist}")
-            m3.config_list(mlist, strict=False)
+            m3.config_list(mlist, type="news",
+                           display_name=f"{group_name}: Ankündigung",
+                           subject_prefix=f"[{group_name} Ankündigung] ",
+                           )
             m3.sync_list(mlist, members=members, owners=owners, strict=False)
 
     
