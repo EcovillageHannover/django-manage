@@ -33,6 +33,7 @@ class PollCollection(models.Model):
         permissions = (
             ('vote_pollcollection',    'Umfrage abstimmen'),
             ('analyze_pollcollection', 'Umfrage auswerten'),
+            ('export_pollcollection',  'Umfragedaten exportieren'),
         )
 
     def __unicode__(self):
@@ -50,6 +51,9 @@ class PollCollection(models.Model):
 
     def can_analyze(self, user):
         return user.has_perm('analyze_pollcollection', self) or user.is_superuser
+
+    def can_export(self, user):
+        return user.has_perm('export_pollcollection', self) or user.is_superuser
 
     def can_change(self, user):
         return user.has_perm('change_pollcollection', self) or user.is_superuser

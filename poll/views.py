@@ -5,6 +5,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .utils import set_cookie
+import csv
+import io
 
 from .models import Poll, Item, Vote, PollCollection
 from .forms import *
@@ -60,8 +62,12 @@ def poll_collection_view(request, poll_collection_id):
         number += 1
 
         # If the result is visible, also the unpublished polls are visible
-        if not pc.can_change(request.user) and not p.is_published:
-            continue
+        if not p.is_published:
+            if pc.can_change(request.user) \
+               or pc.can_export(request.user):
+                pass
+            else:
+                continue
 
         form = PollForm(instance=p, user=request.user)
 
@@ -97,6 +103,7 @@ def poll_collection_view(request, poll_collection_id):
         'can_vote':    pc.can_vote(request.user),
         'can_analyze': pc.can_analyze(request.user),
         'can_change':  pc.can_change(request.user),
+        'can_export':  pc.can_export(request.user),
         'next': request.path, # Come back after voting
     }
 
@@ -118,7 +125,6 @@ def vote(request, poll_id):
            "Die Umfrage ist beendet. Entscheidungen können nicht mehr verändert werden.")
         return HttpResponseRedirect(request.POST['next'])
 
-
     if request.method == 'POST':
         form = PollForm(request.POST,instance=poll)
         if form.is_valid():
@@ -132,7 +138,39 @@ def vote(request, poll_id):
     return HttpResponse(status=400)
 
 
+@login_required
+def export_raw(request, poll_id):
+    try:
+        poll = Poll.objects.get(pk=poll_id)
+    except Poll.DoesNotExist:
+        return HttpResponse('Wrong parameters', status=400)
 
+    if not poll.poll_collection.can_export(request.user):
+        return HttpResponse('NotFound', status=404)
+
+
+    
+    votes = Vote.objects.filter(poll=poll_id)
+    response = HttpResponse(
+        content_type="text/csv",
+        status=200)
+    response['Content-Disposition'] = f'attachment; filename="poll_{poll_id}.csv'
+    out = csv.writer(response)
+    out.writerow(
+        ["PollID", "Vorname", "Nachname", "E-Mail", "Auswahl", "Abstimmungszeitpunkt"]
+    )
+    for vote in votes:
+        out.writerow([
+            poll_id,
+            vote.user.first_name,
+            vote.user.last_name,
+            vote.user.email,
+            vote.item.export_key or vote.item.value,
+            vote.updated_at.strftime("%d.%m.%Y %H:%M")
+        ])
+
+
+    return response
 
 
 def percentage(poll, item):

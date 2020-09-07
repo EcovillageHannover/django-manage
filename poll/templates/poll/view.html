@@ -34,7 +34,7 @@
       <a href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
         <span class="float-right btn btn-danger">Bearbeiten</span>
       </a>
-    {% endif %}
+      {% endif %}
 
 
 
@@ -88,6 +88,7 @@
         {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
         {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
         {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
+        {% if can_export %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">Datenexport</span></a>{% endif %}
       </span>
     </h3>
     <div class="card-block p-3">
@@ -114,9 +115,10 @@
         </div>
         {% if form.show_results %}
         <div class="col-md-5 poll-result">
-           {% if not form.instance.is_text %}
+          {% if not form.instance.is_text %}
+          <ul>
             {% for item, value, percent in form.instance.results %}
-              <li>{{ item.value }} {% if not form.instance.is_prio %}<span class="float-right"><em>({{item.vote_count}} Stimmen)</em></span><br/>{% endif %}
+              <li class="overflow-auto">• {{ item.value }} {% if not form.instance.is_prio %}<span class="float-right"><em>({{item.vote_count}} Stimmen)</em></span><br/>{% endif %}
                 {% if form.instance.show_percent %}
                   <div class="progress mb-2">
                     <div class="progress-bar bg-info" style="width: {{percent}}%" role="progressbar"  aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100">
@@ -129,7 +131,8 @@
                   </div>
                 {% endif %}
               </li>
-            {% endfor %}
+              {% endfor %}
+              </ul>
           {% endif %}
           <div class="total_votes">Stimmen: <b>{{ form.instance.vote_count }}</b></div><br>
         </div>
