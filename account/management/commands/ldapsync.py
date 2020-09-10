@@ -7,6 +7,7 @@ import evh.settings_local as config
 from pathlib import Path
 from account.signals import *
 from datetime import datetime
+from account.mailman import Mailman
 import os
 
 import logging

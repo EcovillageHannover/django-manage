@@ -68,7 +68,7 @@ class PollCollection(models.Model):
     def get_unvoted(self, user):
         if not self.can_vote(user) or not self.is_active or not self.is_published:
             return []
-        return self.polls.all().exclude(vote__user=user)
+        return self.polls.filter(is_published=True).exclude(vote__user=user)
 
 
 

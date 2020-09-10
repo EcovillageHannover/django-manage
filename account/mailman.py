@@ -14,9 +14,13 @@ class Mailman:
             settings.MAILMAN_PASSWORD
         )
 
-    def get_lists(self):
-        domain = self.m3.get_domain(settings.MAILMAN_LIST_DOMAIN)
-        return {mlist.list_name: mlist for mlist in domain.lists}
+    def get_lists(self, subscriber=None):
+        if subscriber is None:
+            domain = self.m3.get_domain(settings.MAILMAN_LIST_DOMAIN)
+            return {mlist.list_name: mlist for mlist in domain.lists}
+        else:
+            mlists = self.m3.find_lists(subscriber, mail_host=settings.MAILMAN_LIST_DOMAIN)
+            return {mlist.list_name: mlist for mlist in mlists}
 
     def config_list(self, mlist, type, **kwargs):
         config = dict(

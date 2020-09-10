@@ -250,6 +250,7 @@ def profile(request):
         'user': request.user,
         'groups': [group.name for group in user.groups.all()],
         'own_groups':  LDAP().owned_groups(user.username),
+        'mlists': Mailman().get_lists(user.email).values(),
     })
 
 ################################################################

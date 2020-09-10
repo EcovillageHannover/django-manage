@@ -133,7 +133,7 @@ class LDAP:
         ldap_filter = f"{settings.AUTH_LDAP_GROUP_DN}"
         ret = self.conn.search_s(settings.AUTH_LDAP_GROUP_DN,
                                  ldap.SCOPE_SUBTREE,
-                                 "(|(objectClass=groupOfNames))", ["cn"])
+                                 "(|(objectClass=groupOfNames)(objectClass=groupOfURLs))", ["cn"])
         return [e["cn"][0].decode() for dn, e in ret]
 
     def owned_groups(self, user):

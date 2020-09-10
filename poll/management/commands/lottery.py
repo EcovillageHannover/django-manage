@@ -5,6 +5,7 @@ import evh.settings_local as config
 from django.core.mail import send_mail
 from poll.models import *
 from collections import defaultdict
+import itertools
 import random
 import logging
 import time
@@ -114,13 +115,11 @@ Team Digitales -- Lottofee.
         items = Item.objects.filter(poll=poll)
         for item in items:
             if ('absage' in str(item).lower()):
-            #if not ('1. september' in str(item).lower()):
                 continue
-            for vote in Vote.objects.filter(item=item):
-                print(f"{vote.user.get_full_name()} <{vote.user.email}>,", end=' ')
-                #print(f"{vote.user.get_full_name()}")
-        print()
-                
+            for group, votes in itertools.groupby(Vote.objects.filter(item=item), key=lambda x: x.item.export_key):
+                mails = map(lambda vote: f"{vote.user.get_full_name()} <{vote.user.email}>",votes)
+                print(group, "Bcc:", ", ".join(mails))
+
     def handle(self, *args, **options):
         self.args = args
         self.options = options
