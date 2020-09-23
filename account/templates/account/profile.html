@@ -18,6 +18,14 @@ Benutzerprofil
         <li><strong>Benutzername:</strong> {{user.username}}</li>
         <li><strong>E-Mail:</strong> {{user.email}}</li>
       </ul>
+      {% if managed_users %}
+      <strong>Deine verwalteten Nutzer</strong>
+      <ul>
+        {% for u in managed_users %}
+        <li><a href="{% url 'account:impersonate' u.username %}">{{u.vorname}} {{u.nachname}}</a></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
     </div>
   </div>
   {% if own_groups %}
@@ -46,7 +54,8 @@ Benutzerprofil
       </ul>
     </div>
   </div>
-<div class="col-md-6">
+  {% if mlists %}
+  <div class="col-md-6">
     <div class="card m-2 p-2">
       <strong>Deine Mailinglisten-Abonnements</strong>
       <ul>
@@ -56,6 +65,7 @@ Benutzerprofil
       </ul>
     </div>
   </div>
+  {% endif %}
 </div>
 
 {% endblock %}

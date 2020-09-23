@@ -20,6 +20,7 @@ from django.urls import reverse
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
 from account.signals import user_changed, group_changed
+from impersonate.signals import session_begin
 
 
 
@@ -246,12 +247,49 @@ def profile(request):
     user_changed.send(sender=profile, username=request.user.username)
     user = LDAPBackend().populate_user(request.user.username)
     user = request.user
+    l = LDAP()
     return render(request, 'account/profile.html', {
         'user': request.user,
         'groups': [group.name for group in user.groups.all()],
-        'own_groups':  LDAP().owned_groups(user.username),
+        'own_groups':  l.owned_groups(user.username),
+        'managed_users': l.managed_users(user.username),
         'mlists': Mailman().get_lists(user.email).values(),
     })
+
+@login_required
+def impersonate(request, user):
+    managed_users = LDAP().managed_users(request.user.username)
+    if user not in {x['username'] for x in managed_users} \
+       and not request.user.is_superuser:
+        return HttpResponse('Permission denied', status=403)
+
+    new_user = LDAPBackend().populate_user(user)
+    if not new_user:
+        return HttpResponse('Not found', status=404)
+
+    logger.info(f"Impersonating {new_user}")
+
+    messages.add_message(request, messages.SUCCESS,
+                                 f"Du bist ab sofort als '{new_user.username}' angemeldet.")
+
+    prev_path = request.META.get('HTTP_REFERER')
+    if prev_path:
+        request.session['_impersonate_prev_path'] = \
+            request.build_absolute_uri(prev_path)
+
+    request.session['_impersonate'] = new_user.pk
+    request.session.modified = True  # Let's make sure...
+
+    # can be used to hook up auditing of the session
+    session_begin.send(
+        sender=None,
+        impersonator=request.user,
+        impersonating=new_user,
+        request=request
+    )
+
+    return HttpResponseRedirect(request.POST.get('next') or prev_path or '/')
+
 
 ################################################################
 # Group

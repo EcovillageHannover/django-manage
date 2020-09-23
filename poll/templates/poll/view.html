@@ -118,12 +118,17 @@
           {% if not form.instance.is_text %}
           <ul>
             {% for item, value, percent in form.instance.results %}
-              <li class="overflow-auto">• {{ item.value }} {% if not form.instance.is_prio %}<span class="float-right"><em>({{item.vote_count}} Stimmen)</em></span><br/>{% endif %}
+            <li class="overflow-auto">• {{ item.value }}
+              {% if not form.instance.is_prio  and not form.instance.is_yes_no_none %}
+              <span class="float-right"><em>({{item.vote_count}} Stimmen)</em></span><br/>
+              {% endif %}
+              {% if form.instance.is_yes_no_none %}<br/>
+                <span class="float-right"><em>({{value}}, Stimmen: {{item.vote_count}})</em></span><br/>{% endif %}
                 {% if form.instance.show_percent %}
                   <div class="progress mb-2">
                     <div class="progress-bar bg-info" style="width: {{percent}}%" role="progressbar"  aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100">
                       {% if form.instance.is_prio %}
-                        {{value}}/5.0
+                         {{value}}/5.0
                       {% else %}
                         {{percent}}%
                       {% endif %}

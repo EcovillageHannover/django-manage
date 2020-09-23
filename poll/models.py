@@ -80,11 +80,14 @@ class Poll(models.Model):
     CHECKBOX = 'CE'
     TEXT = 'TX'
     PRIO = 'PR'
+    YESNONONE = 'Y3'
+    
     TYPE_CHOICES = (
         (RADIO, 'Einfachauswahl'),
         (CHECKBOX, 'Mehrfachauswahl'),
         (TEXT, 'Freitext'),
-        (PRIO, 'Priorisierung')
+        (PRIO, 'Priorisierung'),
+        (YESNONONE, 'Ja-Nein-Enthaltung'),
     )
 
     poll_type = models.CharField(max_length=2,
@@ -124,6 +127,10 @@ class Poll(models.Model):
     @property
     def is_prio(self):
         return self.poll_type == Poll.PRIO
+
+    @property
+    def is_yes_no_none(self):
+        return self.poll_type == Poll.YESNONONE
     
     @property
     def items(self):
@@ -141,6 +148,15 @@ class Poll(models.Model):
                     votes = Vote.objects.filter(item=item)
                     avg =  sum(int(v.text) for v in votes) / float(votes.count())
                     ret += [(item, "%.1f"%avg, int(avg/5.0*100))]
+                elif self.is_yes_no_none:
+                    votes = Vote.objects.filter(item=item)
+                    stimmen = dict(ja=0, nein=0, enthaltung=0)
+                    for v in votes:
+                        stimmen[v.text] += 1
+
+                    label = "Ja: {ja}, Nein: {nein}, Enthaltung: {enthaltung}".format(
+                        **stimmen)
+                    ret += [(item, label, 0)]
                 else:
                     percent = int(item.vote_count / float(count) * 100)
                     ret += [(item, percent, percent)]

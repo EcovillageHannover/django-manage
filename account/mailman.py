@@ -19,7 +19,11 @@ class Mailman:
             domain = self.m3.get_domain(settings.MAILMAN_LIST_DOMAIN)
             return {mlist.list_name: mlist for mlist in domain.lists}
         else:
-            mlists = self.m3.find_lists(subscriber, mail_host=settings.MAILMAN_LIST_DOMAIN)
+            try:
+                # FIXME: This also returns lists where I'm only the owner
+                mlists = self.m3.find_lists(subscriber, mail_host=settings.MAILMAN_LIST_DOMAIN)
+            except HTTPError:
+                return {}
             return {mlist.list_name: mlist for mlist in mlists}
 
     def config_list(self, mlist, type, **kwargs):
@@ -48,7 +52,8 @@ class Mailman:
             config["default_nonmember_action"] = "hold"
             config['advertised'] = True
 
-        if mlist.list_name in ('vorstand', 'aufsichtsrat'):
+        if mlist.list_name in ('vorstand', 'aufsichtsrat',
+                               'ecotopia-vorstand', 'ecotopia-aufsichtsrat'):
             config['archive_policy'] = 'never'
 
         #for k,v in mlist.settings.items():

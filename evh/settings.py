@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'guardian',
     'taggit',
     'impersonate',
+    'macros',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -55,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'csp.middleware.CSPMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -222,6 +224,9 @@ IMPERSONATE = {
     'REDIRECT_FIELD_NAME': 'next',
     'REDIRECT_URL': '/',
 }
+
+CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'")
+CSP_FRAME_ANCESTORS = ("'self'", "*.my-evh.de", "*.ecovillage-hannover.de")
 
 
 from .settings_local import *

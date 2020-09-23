@@ -143,6 +143,8 @@ class Command(BaseCommand):
                             help="Maximum number of tries")
         parser.add_argument("--filter:email",  metavar="EMAIL",
                             help="Pattern for E-MAiladdress")
+        parser.add_argument("--filter:user",  metavar="USER",
+                            help="Pattern for User")
 
         parser.add_argument("--filter:all", action="store_true")
 
@@ -233,6 +235,13 @@ class Command(BaseCommand):
                 accounts = [a for a in accounts
                             if options['filter:email'] in a.email]
                 logger.info("Remove %s accounts: EMAIL", old - len(accounts))
+
+
+            if options['filter:user']:
+                old = len(accounts)
+                accounts = [a for a in accounts
+                            if options['filter:user'] in a.username]
+                logger.info("Remove %s accounts: USER", old - len(accounts))
     
     
             if options['action:list'] or options['action:print']:

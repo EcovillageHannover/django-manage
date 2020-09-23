@@ -4,10 +4,7 @@
 
 {% block bootstrap4_content %}
 
-
-
-
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav id='navigationBarTop' class="navbar navbar-expand-lg navbar-light bg-light">
   <a class="navbar-brand" href="/">EVH Account</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
@@ -33,9 +30,10 @@
             <a class="dropdown-item" href="{% url 'admin:index' %}">Django-Admin</a>
           {% endif %}
           {% if user.is_impersonate %}
-            <a class="dropdown-item" href="/impersonate/stop?next={{request.get_full_path | urlencode}}">Stop Impersonating</a>
+            <a class="dropdown-item" href="/impersonate/stop?next={{request.get_full_path | urlencode}}">Logout (Verwalteter Nutzer)</a>
+          {% else %}
+            <a class="dropdown-item" href="{% url 'account:logout' %}">Logout</a>
           {% endif %}
-          <a class="dropdown-item" href="{% url 'account:logout' %}">Logout</a>
         </div>
   </div>
 

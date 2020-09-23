@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 
+{% load macros %}
 {% load bootstrap4 %}
 
 {% block title %}
@@ -139,43 +140,63 @@
   </div>
   {%endif %}
 
+{% macro service name icon body=""%}
+    <div class="col-sm-4">
+        <div class="card card-light-bg">
+          <h3 class="card-header">{{name}}</h3>
+          <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="{{icon}}">
+          <div class="card-block">
+            {{body}}
+          </div>
+        </div>
+      </div>
+{% endmacro %}
+  
 
+<h2 class="pt-3 pb-3">Dienste</h2>
   <div class="row">
     {% if not user.is_authenticated %}
-      <div class="col-sm-4">
-        <div class="card card-light-bg">
-          <h3 class="card-header">EVH Account</h3>
-          <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="/static/imgs/account.svg">
-          <div class="card-block">
-            <p>Erstelle einen Account mit einem Erstellungscode.</p>
-            <a href="https://account.my-evh.de/account/create" class="btn btn-primary">Account erstellen</a>
-            <a href="{% url 'account:login' %}" class="btn btn-primary">Einloggen</a>
-          </div>
-        </div>
-      </div>
-    {% endif %}
-    <div class="col-sm-4">
-        <div class="card card-light-bg">
-          <h3 class="card-header">Umfragetool</h3>
-          <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="/static/imgs/survey.png">
-          <div class="card-block">
+      {% macro_block service "EVH-Account" "/static/imgs/account.svg"%}
+        {% macro_kwarg body %}
+          <p>Erstelle einen Account mit einem Erstellungscode.</p>
+          <a href="https://account.my-evh.de/account/create" class="btn btn-primary">Account erstellen</a>
+          <a href="{% url 'account:login' %}" class="btn btn-primary">Einloggen</a>
+        {% endmacro_kwarg %}
+      {% endmacro_block %}
+    {% else %}
+      {% macro_block service "Umfragetool" "/static/imgs/survey.png"%}
+        {% macro_kwarg body %}
             <p>Nimm an Umfragen, Terminvergaben und Abstimmungen teil. Aktuell hast du <span class="badge badge-info">{{unvoted_polls}} unbeantwortete Fragen</span> in <span class="badge badge-info">{{unvoted_pcs}} Umfragen</span>.</p>
             <a href="{% url 'poll:list' %}" class="btn btn-primary">Umfragen und Abstimmungen</a>
-          </div>
-        </div>
-      </div>
-    <div class="col-sm-4">
-      <div class="card card-light-bg">
-        <h3 class="card-header">Webchat</h3>
-        <img class="card-img-top" style="width: 50%; margin:auto; padding-top:1em; padding-bottom:1ex;" src="/static/imgs/element-logo.svg">
-        <div class="card-block">
-          <p>Hier kannst du mit einzelnen AGs und Teams direkt ins Gespräch kommen.</p>
-          <p>
-            <a href="https://chat.my-evh.de" class="btn btn-primary">Webchat öffnen</a>
-            <a href="https://account.my-evh.de/static/matrix-anleitung.pdf" class="btn btn-primary">Anleitung</a>
-        </div>
-      </div>
-    </div>
+        {% endmacro_kwarg %}
+      {% endmacro_block %}
+      {% macro_block service "Webchat" "/static/imgs/element-logo.svg"%}{% macro_kwarg body %}
+        <p>Hier kannst du mit einzelnen AGs und Teams direkt ins Gespräch kommen.</p>
+        <p>
+          <a href="https://chat.my-evh.de" class="btn btn-primary">Webchat öffnen</a>
+          <a href="https://account.my-evh.de/static/matrix-anleitung.pdf" class="btn btn-primary">Anleitung</a>
+        </p>
+      {% endmacro_kwarg %}{% endmacro_block %}
+    {% endif %}
   </div>
+
+  {% if user.is_authenticated %}
+    <h2 class="pt-3 pb-3">Dienste für Gremienmitglieder und AG Gastgeber</h2>
+    <div class="row">
+
+      {% macro_block service "Nextcloud" "/static/imgs/Nextcloud.png"%}{% macro_kwarg body %}
+        <p>In der Nextcloud können Dateien geteilt, Termineumfragen erstellt, und Aufgabenlisten gepflegt werden.<strong>Achtung!</strong> Dies ist ein Link auf die neue Nextcloud (grün). Es sind noch nicht alle Dateien migriert.</p>
+        <p>
+          <a href="https://cloud.my-evh.de/" class="btn btn-primary">Nextcloud öffnen</a>
+        </p>
+      {% endmacro_kwarg %}{% endmacro_block %}
+      {% macro_block service "Webmail" "/static/imgs/mail.svg"%}{% macro_kwarg body %}
+        <p>Falls du ein persöhnliches EVH-Postfach hast oder ein Funktionspostfach betreust, kannst du deine Nachrichten im Webmail lesen.</p>
+        <p>
+          <a href="https://cloud.my-evh.de/apps/rainloop" class="btn btn-primary">Webmail öffnen</a>
+        </p>
+      {% endmacro_kwarg %}{% endmacro_block %}
+     </div>
+  {% endif %}
 
 {% endblock %}

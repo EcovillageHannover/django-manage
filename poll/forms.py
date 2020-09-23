@@ -37,6 +37,17 @@ class PollForm(forms.ModelForm):
                 )
             for vote in self.votes:
                 self.initial['prio-' + str(vote.item.pk)] = vote.text
+        elif self.instance.poll_type == Poll.YESNONONE:
+            items = Item.objects.filter(poll=self.instance)
+            for item in sorted(items, key=lambda i: i.position):
+                self.fields['yesnonone-' + str(item.id)] = forms.ChoiceField(
+                    choices=[('ja',         'Ja'),
+                             ('nein',       'Nein'),
+                             ('enthaltung', 'Enthaltung')],
+                    widget = HorizontalRadioSelect(attrs={'title': item.value})
+                )
+            for vote in self.votes:
+                self.initial['yesnonone-' + str(vote.item.pk)] = vote.text
         else:
             self.choices = []
             items = Item.objects.filter(poll=self.instance)
@@ -98,10 +109,12 @@ class PollForm(forms.ModelForm):
                                            poll=self.instance,
                                            item=item)
                 vote.save()
-        elif any([x.startswith('prio-') for x in self.cleaned_data]):
+        elif any([x.startswith('prio-') or x.startswith('yesnonone-')
+                  for x in self.cleaned_data]):
             for key in self.cleaned_data:
-                if not key.startswith('prio-'): continue
-                item_id = int(key.split("-")[1])
+                type, item_id = key.split('-', 1)
+                if type not in ('prio', 'yesnonone'): continue
+                item_id = int(item_id)
                 item = Item.objects.get(pk=item_id)
                 vote = Vote.objects.create(user=user,
                                            poll=self.instance,

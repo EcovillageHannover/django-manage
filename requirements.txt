@@ -7,5 +7,8 @@ django-guardian
 django-markdownify
 django-taggit
 django-impersonate
+django-macros
+django-csp
 psycopg2
 mailmanclient
+

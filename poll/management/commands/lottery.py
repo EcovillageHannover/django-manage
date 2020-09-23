@@ -113,11 +113,13 @@ Team Digitales -- Lottofee.
 
     def windhund(self, poll):
         items = Item.objects.filter(poll=poll)
+        bcc = set()
         for item in items:
             if ('absage' in str(item).lower()):
                 continue
-            for group, votes in itertools.groupby(Vote.objects.filter(item=item), key=lambda x: x.item.export_key):
-                mails = map(lambda vote: f"{vote.user.get_full_name()} <{vote.user.email}>",votes)
+            votes = Vote.objects.filter(item=item)
+            for group, group_votes in itertools.groupby(votes, key=lambda x: x.item.export_key):
+                mails = map(lambda vote: f"{vote.user.get_full_name()} <{vote.user.email}>",group_votes)
                 print(group, "Bcc:", ", ".join(mails))
 
     def handle(self, *args, **options):

@@ -11,13 +11,14 @@ from django.db import models
 import django.dispatch
 from django.db.models.manager import Manager
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.db.models import Count
 from django.conf import settings
 from collections import namedtuple
 from taggit.managers import TaggableManager
 from django.core.signals import request_finished
 from django_auth_ldap.backend import LDAPBackend
+from django.core.cache import cache
 
 import logging
 logger = logging.getLogger(__name__)
@@ -37,6 +38,10 @@ class Invite(models.Model):
         md5 = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
         invite, created = Invite.objects.get_or_create(md5=md5)
         return invite
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    recovery_mail =  models.EmailField(max_length=100,blank=True)
 
 class GroupProfile(models.Model):
     group = models.OneToOneField(Group, on_delete=models.CASCADE)
@@ -170,6 +175,19 @@ class LDAP:
 
         return sorted([self.__from_user(entry) for _, entry in ret],
                       key=lambda x: x["username"])
+
+    def managed_users(self, user):
+        ldap_filter = f"(manager=cn={user},{settings.AUTH_LDAP_USER_DN})"
+        ret = self.conn.search_s(settings.AUTH_LDAP_USER_DN,
+                                 ldap.SCOPE_SUBTREE,
+                                 ldap_filter,
+                                 ["cn", "givenName", "sn", "mail"])
+        
+        managed = sorted([self.__from_user(entry) for _, entry in ret],
+                         key=lambda x: x["username"])
+        cache.set(f'LDAP.managed_users.{user}', managed, 300)
+        
+        return managed
 
     def search_user(self, term):
         ldap_filter = f"(|(cn={term})(mail={term}))"
