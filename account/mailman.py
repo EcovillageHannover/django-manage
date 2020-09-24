@@ -106,3 +106,21 @@ class Mailman:
             sync_tag('owner', owner_mails, m3_owner_mails,
                      add=lambda mail: mlist.add_owner(mail),
                      remove=lambda mail: mlist.remove_owner(mail))
+
+    def subscribe(self, mlist, subscriber):
+        try:
+            list_id = f"{mlist}@{settings.MAILMAN_LIST_DOMAIN}"
+            mlist = self.m3.get_list(list_id)
+        except HTTPError as e:
+            return "Mailingliste nicht gefunden"
+
+        try:
+            logger.info("Subscribe %s on %s", subscriber, mlist)
+            mlist.subscribe(subscriber,
+                            pre_verified=True,
+                            pre_confirmed=True,
+                            pre_approved=True)
+        except HTTPError as e:
+            return 0
+
+        return 1

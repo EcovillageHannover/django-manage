@@ -26,7 +26,8 @@ from impersonate.signals import session_begin
 
 
 import evh.settings as config
-from .models import parse_token, Invite, ldap_addgroup, LDAP, GroupProfile, make_username
+from evh.utils import parse_token
+from .models import Invite, ldap_addgroup, LDAP, GroupProfile, make_username
 from .forms import *
 from .mailman import Mailman
 

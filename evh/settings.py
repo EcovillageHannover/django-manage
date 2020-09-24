@@ -37,6 +37,7 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 INSTALLED_APPS = [
     'account',
     'poll',
+    'newsletter.apps.EVHNewsletterConfig',
     'bootstrap4',
     'markdownify',
     'guardian',

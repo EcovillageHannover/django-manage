@@ -1,0 +1,16 @@
+{% extends "base-plain.html" %}
+
+{% load bootstrap4 %}
+{% load markdownify %}
+
+{% block title %}Newsletter{% endblock %}
+
+{% block content %}
+{% if form %}
+<form method="POST" action="{% url 'newsletter:subscribe'%}">
+  {% csrf_token %}
+  {% bootstrap_form form layout='inline' %}
+  {% bootstrap_button "Eintragen" button_type="submit" button_class="btn-info" %}
+</form>
+{% endif %}
+{% endblock %}

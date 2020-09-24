@@ -45,6 +45,7 @@ urlpatterns = [
     path('poll/', include('poll.urls', namespace="poll")),
     path('admin/', admin.site.urls, name='admin'),
     path('impersonate/', include('impersonate.urls')),
+    path('newsletter/', include('newsletter.urls', namespace="newsletter")),
 ]
 
 if not settings.DEBUG:
