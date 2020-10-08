@@ -31,8 +31,14 @@ class Command(BaseCommand):
                 continue
             user_changed.send(sender=self.__class__, username=username)
 
+        m = Mailman()
         for group in LDAP().groups():
             if (options['user'] or options['group']) and \
                (options['group'] != "all" and group != options['group']):
                 continue
+            if group.startswith('ag-') and group != 'ag-gastgeber':
+                news = group + "-news"
+                print(news)
+            #    m.domain.create_list(news)
+
             group_changed.send(sender=self.__class__, group=group)

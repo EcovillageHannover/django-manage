@@ -19,7 +19,8 @@ from django.utils.http import urlsafe_base64_decode
 from django.urls import reverse
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
-from account.signals import user_changed, group_changed
+from account import signals
+from account.signals import user_changed
 from impersonate.signals import session_begin
 
 
@@ -127,14 +128,7 @@ def __create(request, context, vorname, nachname, username, mail):
         context['success'] = False
         return
 
-    ################################################################
-    # Initial Groups
-    invite = Invite.find_by_mail(mail)
-    groups = [g for g in (invite.groups or "").split(",") if g]
-    for group in groups:
-        if ldap_addgroup(username, group):
-            messages.add_message(request, messages.SUCCESS,
-                                 "Du wurdest der Gruppe %s hinzugefügt" % group)
+    User = LDAP().search_user(username)
 
 
     ################################################################
@@ -143,6 +137,18 @@ def __create(request, context, vorname, nachname, username, mail):
     login(request, user)
 
     user_changed.send(sender=create, username=username)
+
+    ################################################################
+    # Initial Groups
+    invite = Invite.find_by_mail(mail)
+    groups = [g for g in (invite.groups or "").split(",") if g]
+    for group in groups:
+        if ldap_addgroup(username, group):
+            signals.group_member_add.send(sender=create,
+                                          group=group,
+                                          member=User)
+            messages.add_message(request, messages.SUCCESS,
+                                 "Du wurdest der Gruppe %s hinzugefügt" % group)
 
     ################################################################
     # Mail versenden
@@ -335,6 +341,7 @@ def group(request, group):
     return render(request, 'account/group.html', {
         'group': group,
         'group_profile_form': GroupProfileForm(instance=profile),
+        'owners': [m['username'] for m in LDAP().group_owners(group)],
         'members': LDAP().group_members(group),
         'mlist_discuss': mlists.get(f"{group}"),
         'mlist_news': mlists.get(f"{group}-news"),
@@ -346,8 +353,14 @@ def group_member_remove(request, group, user):
     group = __resolve_group(request, group)
     if isinstance(group, HttpResponse):
         return group
+    l = LDAP()
 
-    members = LDAP().group_members(group)
+    User = LDAP().search_user(user)
+    if not User:
+        messages.add_message(request, messages.ERROR,
+                             f"Nutzer '{user}' nicht gefunden!")
+
+    members = l.group_members(group)
     for member in members:
         if member["username"] == user:
             break
@@ -360,7 +373,8 @@ def group_member_remove(request, group, user):
                                  f"Nutzer {user} entfernt.")
 
             user_changed.send(sender=group_member_remove, username=user)
-            group_changed.send(sender=group_member_remove, group=group)
+            signals.group_member_remove.send(sender=group_member_remove,
+                                             group=group, member=User)
         else:
             messages.add_message(request, messages.ERROR,
                                  f"Nutzer {user} entfernen fehlgeschlagen.")
@@ -405,7 +419,9 @@ def group_member_add(request, group):
                                  f"Nutzer {username} hinzugefügt.")
 
             user_changed.send(sender=group_member_add, username=username)
-            group_changed.send(sender=group_member_add, group=group)
+            signals.group_member_add.send(sender=group_member_add,
+                                          group=group,
+                                          member=User)
         else:
             messages.add_message(request, messages.ERROR,
                                  f"Nutzer {username} hinzufügen fehlgeschlagen.")
@@ -468,3 +484,14 @@ def group_member_invite(request, group):
         yes="Ja, Mensch einladen!",
         next=group_url
     ))
+
+def group_mailman(request, group):
+    groups = Group.objects.filter(name=group)
+    if len(groups) != 1:
+        return HttpResponse('NotFound', status=404)
+
+
+    return render(request, 'group/mailman.txt',
+                  dict(group=groups[0]),
+                  content_type='text/plain; charset=utf8'
+                  )

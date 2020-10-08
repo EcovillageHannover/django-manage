@@ -19,6 +19,7 @@ urlpatterns = [
     path('group/<str:group>/remove/<str:user>', views.group_member_remove, name="group_member_remove"),
     path('group/<str:group>/add', views.group_member_add, name="group_member_add"),
     path('group/<str:group>/invite', views.group_member_invite, name="group_member_invite"),
+    path('group/<str:group>/mailman', views.group_mailman, name="group_mailman"),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('profile/', views.profile, name='profile'),

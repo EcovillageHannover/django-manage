@@ -35,7 +35,7 @@ def subscribe(request):
     if request.method == 'POST':
         form = SubscribeForm(request.POST)
         if form.is_valid():
-            newsletters = form.cleaned_data['newsletters']
+            newsletters = form.cleaned_data['newsletters'] + ['genossenschaft-news']
             mask = newsletter_config.encode(newsletters)
             email = 'stettberger@dokucode.de'
             logger.info("Subscribe %s to: %s (%d)", email, newsletters, mask)

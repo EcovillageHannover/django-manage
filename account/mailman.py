@@ -1,6 +1,10 @@
 from django.conf import settings
 from mailmanclient import Client as Mailman3Client
 from six.moves.urllib_error import HTTPError
+from evh.utils import bidict
+from django.urls import reverse
+from django.contrib.auth import get_user_model
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -14,6 +18,11 @@ class Mailman:
             settings.MAILMAN_PASSWORD
         )
 
+    @property
+    def domain(self):
+        return self.m3.get_domain(settings.MAILMAN_LIST_DOMAIN)
+
+
     def get_lists(self, subscriber=None):
         if subscriber is None:
             domain = self.m3.get_domain(settings.MAILMAN_LIST_DOMAIN)
@@ -21,18 +30,22 @@ class Mailman:
         else:
             try:
                 # FIXME: This also returns lists where I'm only the owner
-                mlists = self.m3.find_lists(subscriber, mail_host=settings.MAILMAN_LIST_DOMAIN)
-            except HTTPError:
+                mlists = self.m3.find_lists(subscriber=subscriber,
+                                            role='member',
+                                            mail_host=settings.MAILMAN_LIST_DOMAIN)
+                logger.info("%s: %s", subscriber, mlists)
+            except HTTPError as e:
                 return {}
             return {mlist.list_name: mlist for mlist in mlists}
 
-    def config_list(self, mlist, type, **kwargs):
+    def config_list(self, group, mlist, type, **kwargs):
         config = dict(
             send_welcome_message=False,
             archive_policy="private",
             preferred_language="de",
             dmarc_mitigate_action="munge_from",
             max_message_size=1024,
+            admin_immed_notify=False,
         )
         config.update(kwargs)
         if type == "discuss":
@@ -51,6 +64,11 @@ class Mailman:
             config["default_member_action"] = "hold"
             config["default_nonmember_action"] = "hold"
             config['advertised'] = True
+
+            mlist.set_template('list:member:regular:footer',
+                               settings.BASE_URL + reverse('account:group_mailman', args=[group]))
+            print(mlist.templates)
+
 
         if mlist.list_name in ('vorstand', 'aufsichtsrat',
                                'ecotopia-vorstand', 'ecotopia-aufsichtsrat'):
@@ -72,8 +90,19 @@ class Mailman:
 
 
     def sync_list(self, mlist, members, owners=None, strict=True):
-        members_mails = set([u['mail'].lower() for u in members])
-        subscriber_mails = set([m.address.email.lower() for m in mlist.members])
+        members = bidict({u['username'].lower(): u['mail'].lower() for u in members})
+        members_mails = set(members.values())
+        subscribers = []
+        page_idx = 1
+        while True:
+            page = mlist.get_member_page(page=page_idx, count=100)
+            page_idx += 1
+            subscribers.extend(page)
+            logger.debug("Getting Subscriber Page %d", page_idx)
+            if len(page) < 100: break
+        print(type(subscribers))
+
+        subscriber_mails = set([m.address.email.lower() for m in subscribers])
 
         def sync_tag(tag, should_set, is_set, add, remove, strict=True):
             for element in should_set - is_set:
@@ -81,6 +110,9 @@ class Mailman:
                 add(element)
 
             # If we do not sync strict, we are fine here
+            UserModel = get_user_model()
+            for x in is_set - should_set:
+                print(x)
             if not strict: return
 
             for element in is_set - should_set:
@@ -95,31 +127,54 @@ class Mailman:
                  remove=lambda subscriber: mlist.unsubscribe(subscriber),
                  strict=strict)
 
-        if owners:
+        if owners is not None:
             owner_mails = set([u['mail'].lower() for u in owners])
             moderator_mails = set([m.address.email.lower() for m in mlist.moderators])
             sync_tag('moderator', owner_mails, moderator_mails,
                      add=lambda mail: mlist.add_moderator(mail),
                      remove=lambda mail: mlist.remove_moderator(mail))
 
-            m3_owner_mails = set([m.address.email for m in mlist.owners])
-            sync_tag('owner', owner_mails, m3_owner_mails,
-                     add=lambda mail: mlist.add_owner(mail),
-                     remove=lambda mail: mlist.remove_owner(mail))
+        for mod in mlist.moderators:
+            if mod.moderation_action != 'accept':
+                mod.moderation_action = 'accept'
+                logger.info(f"{mod}: set moderation action to {mod.moderation_action}")
+                mod.save()
+
+
+        site_admins = set(['dennis.klose@my-evh.de', 'christian.dietrich@my-evh.de'])
+        m3_owner_mails = set([m.address.email for m in mlist.owners])
+        sync_tag('owner', site_admins, m3_owner_mails,
+                 add=lambda mail: mlist.add_owner(mail),
+                 remove=lambda mail: mlist.remove_owner(mail))
 
     def subscribe(self, mlist, subscriber):
         try:
             list_id = f"{mlist}@{settings.MAILMAN_LIST_DOMAIN}"
             mlist = self.m3.get_list(list_id)
         except HTTPError as e:
-            return "Mailingliste nicht gefunden"
+            return f"Mailingliste {mlist} nicht gefunden"
 
         try:
-            logger.info("Subscribe %s on %s", subscriber, mlist)
             mlist.subscribe(subscriber,
                             pre_verified=True,
                             pre_confirmed=True,
                             pre_approved=True)
+            logger.info("Subscribed %s on %s", subscriber, mlist)
+        except HTTPError as e:
+            return 0
+
+        return 1
+
+    def unsubscribe(self, mlist, subscriber):
+        try:
+            list_id = f"{mlist}@{settings.MAILMAN_LIST_DOMAIN}"
+            mlist = self.m3.get_list(list_id)
+        except HTTPError as e:
+            return f"Mailingliste {mlist} nicht gefunden"
+
+        try:
+            mlist.unsubscribe(subscriber)
+            logger.info("Unsubscribed %s on %s", subscriber, mlist)
         except HTTPError as e:
             return 0
 

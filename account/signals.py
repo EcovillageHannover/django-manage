@@ -6,6 +6,7 @@ from django.conf import settings
 from pathlib import Path
 from .mailman import Mailman
 from .models import LDAP
+import time
 import os
 
 import logging
@@ -59,6 +60,26 @@ def user_changed_hook(sender, **kwargs):
             directory.rmdir()
             logger.info("Deleted Kirby Login for %s", user.username)
 
+group_member_remove = django.dispatch.Signal(providing_args=["group", "member"])
+@django.dispatch.receiver(group_member_remove)
+def group_member_remove_hook(sender, **kwargs):
+    group = kwargs.get('group')
+    member = kwargs.get('member')
+
+    m3 = Mailman()
+    rc = m3.unsubscribe(f"{group}", member['mail'])
+    rc = m3.unsubscribe(f"{group}-news", member['mail'])
+
+
+group_member_add = django.dispatch.Signal(providing_args=["group", "member"])
+@django.dispatch.receiver(group_member_add)
+def group_member_add_hook(sender, **kwargs):
+    group = kwargs.get('group')
+    member = kwargs.get('member')
+
+    m3 = Mailman()
+    rc = m3.subscribe(f"{group}", member['mail'])
+    rc = m3.subscribe(f"{group}-news", member['mail'])
 
 group_changed = django.dispatch.Signal(providing_args=["group"])
 @django.dispatch.receiver(group_changed)
@@ -73,6 +94,7 @@ def group_changed_hook(sender, **kwargs):
 
     group_name = str(group).title().replace("Ag-", "AG-").replace("Evh", "EVH")
 
+
     if mlist_discuss in mlists or mlist_news in mlists:
         l = LDAP()
         members = l.group_members(group)
@@ -81,19 +103,29 @@ def group_changed_hook(sender, **kwargs):
         if mlist_discuss in mlists:
             mlist = mlists[mlist_discuss]
             logger.info(f"Sync Mailinglist {mlist}")
-            m3.config_list(mlist, type="discuss",
+            m3.config_list(group, mlist, type="discuss",
                            display_name=f"{group_name}",
                            subject_prefix=f"[{group_name}] ",
                            )
+            start = time.time()
             m3.sync_list(mlist, members=members, owners=owners, strict=True)
+            end = time.time()
+            logger.info("... took %.2f seconds", end-start)
 
         if mlist_news in mlists:
             mlist = mlists[mlist_news]
             logger.info(f"Sync Mailinglist {mlist}")
-            m3.config_list(mlist, type="news",
-                           display_name=f"{group_name}: Ankündigung",
-                           subject_prefix=f"[{group_name} Ankündigung] ",
+            prefix = f"{group_name}: Ankündigung"
+            if group == 'genossenschaft':
+                prefix = 'EVH-Alle'
+            m3.config_list(group, mlist, type="news",
+                           display_name=prefix,
+                           subject_prefix=f"[{prefix}] ",
                            )
+            start = time.time()
             m3.sync_list(mlist, members=members, owners=owners, strict=False)
+            end = time.time()
+            logger.info("... took %.2f seconds", end-start)
+
 
     

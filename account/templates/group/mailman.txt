@@ -1,0 +1,21 @@
+-- 
+EVH Newsletter: {{group}}
+
+Um diesen Newsletter abzubestellen, senden Sie eine Mail an ${short_listname}-leave@${domain}
+Sollte es dabei Probleme geben, wenden Sie sich an support@my-evh.de
+
+________________________________________________________________________________
+
+W| www.ecovillage-hannover.de
+________________________________________________________________________________
+
+ecovillage hannover eG
+Sitz: Davenstedter Str. 200, 30455 Hannover
+Registergericht: Hannover, GnR 200048
+
+Vorstandssprecher: Gerd Nord
+Vorstand: Christine Widdel-Abban, Elvira Hendricks, Uwe Bartkus
+
+Aufsichtsratsvorsitz: Hans Mönninghoff
+Stellvertretender Aufsichtsratsvorsitz: Brigitte Offermann-Hülse
+________________________________________________________________________________

@@ -38,6 +38,7 @@ class Command(BaseCommand):
             for address in entry.get('mail', []):
                 mailboxes[box]['address'].append(address.decode())
 
+
         return mailboxes
 
     def dump_mailboxes(self):
@@ -57,7 +58,7 @@ class Command(BaseCommand):
         for name, properties in sorted(mailboxes.items()):
             addrs = []
             if addresses:
-                addrs = properties['address']
+                addrs += properties['address']
             if aliases:
                 addrs += properties['alias']
             for addr in addrs:

@@ -60,7 +60,8 @@ Gruppe: {{group}}
 </form>
 
 
-<h3>Mitgliedsliste</h3>
+<h3>Mitgliedsliste ({{members |length}} Personen)</h3>
+<em class="float-right">Gruppenverwalter sind grün hevorgehoben.</em>
 <table class="table table-striped">
     <thead>
       <tr>
@@ -73,11 +74,12 @@ Gruppe: {{group}}
     </thead>
     <tbody>
       {% for member in members %}
-        <tr>
+        <tr {% if member.username in owners %}class="table-success"{% endif %}>
           <td>{{member.vorname}}</td>
           <td>{{member.nachname}}</td>
           <td>{{member.username}}</td>
-          <td><a href="{% url 'account:group_member_remove' group.name member.username %}?next={{request.path}}"><span class="badge badge-danger">Entfernen</span></a></td>
+          <td><a href="{% url 'account:group_member_remove' group.name member.username %}?next={{request.path}}"><span class="badge badge-danger">Entfernen</span></a>
+          </td>
         </tr>
       {% endfor %}
     </tbody>
@@ -92,12 +94,13 @@ Gruppe: {{group}}
   <li><strong>{{mlist_discuss.fqdn_listname}}</strong> ({{mlist_discuss.member_count}} Abonenten) -- Auf diser Diskussionsliste sind alle Mitglieder der Gruppe automatisch Abonennten. Jedes Mitglied hat hier das Recht eine Mail an alle anderen zu senden. Diese Liste ist zur Disksussion innerhalb der Gruppe gedacht.</li>
   {% endif %}
   {% if mlist_news %} <li>
-    <p><strong>{{mlist_news.fqdn_listname}}</strong>
+    <p><a href="https://list.my-evh.de/hyperkitty/list/{{mlist_news.fqdn_listname}}/message/new"><strong>{{mlist_news.fqdn_listname}}</strong></a>
+      <!-- <a href="https://list.my-evh.de/postorius/lists/{{mlist_news.list_id}}/mass_subscribe/">Eintragung durch Dich</a>-->
     ({{mlist_news.member_count}} Abonenten) -- Auf diese
     Ankündigungsliste sind alle Mitglieder der Gruppe automatisch
-    Abonennten. Zusätzlich könen weitere Interessierte die
-      Liste abonniert haben (<a href="https://list.my-evh.de/postorius/lists/{{mlist_news.list_id}}/">Selbsteintragung</a>,
-      <a href="https://list.my-evh.de/postorius/lists/{{mlist_news.list_id}}/mass_subscribe/">Eintragung durch Dich</a>). Nur du kann Nachrichten an diese  Mailingliste schicken, da sie dafür gedacht ist Ankündigungen an alle Interessierten zu machen.</p>
+    Abonennten. Zusätzlich können sich weitere Interessierte die
+      Liste abonniert haben (<a href="https://list.my-evh.de/postorius/lists/{{mlist_news.list_id}}/">Selbsteintragung</a>). Nur du kann Nachrichten an diese  Mailingliste Nachrichten schicken, da sie dafür gedacht ist Ankündigungen an alle Interessierten zu machen.<br/>
+     Falls du bereits eine Liste an Interessierten hast, die du auf diese Ankündigungsliste setzen möchtest, musst du aktuell den Umweg über support@my-evh.de machen. Wir arbeiten an einer Lösung.</p>
   </li> {%  endif %}
 </ul>
 {% endif %}

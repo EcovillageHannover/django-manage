@@ -7,6 +7,19 @@
 
 {% block content %}
 {% if form %}
+
+<h2>Ecovillage Newsletter Anmeldung</h2>
+
+<p>
+  <strong>Achtung!</strong> Hier kannst du unseren unregelmäßigen
+  Newsletter abonnieren. Wenn du in einer AG mitarbeiten möchtest, gib
+  auch diese an. Mehrfachauswahl möglich und gewünscht ;)
+  </p>
+
+<p>Anschließend erhältst Du eine Bestätigungs-E-Mail an die von Dir
+angegebene E-Mail-Adresse. Dort musst du den Bestätigungslink
+  klicken.</p>
+
 <form method="POST" action="{% url 'newsletter:subscribe'%}">
   {% csrf_token %}
   {% bootstrap_form form layout='inline' %}

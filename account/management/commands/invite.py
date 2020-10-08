@@ -5,7 +5,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.management.base import BaseCommand, CommandError
 import hashlib
 from account.models import *
-from evh.utils import format_token
+from evh.utils import format_token, parse_token
 import csv
 from collections import namedtuple
 import evh.settings_local as config
