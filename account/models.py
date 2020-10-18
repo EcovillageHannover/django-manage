@@ -39,6 +39,24 @@ class Invite(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     recovery_mail =  models.EmailField(max_length=100,blank=True)
+    mailinglist_mail =  models.EmailField(max_length=100,blank=True)
+
+    # Mitgliedsnummer Ecovillage
+    evh_mitgliedsnummer = models.IntegerField(null=True, blank=True, default=None)
+
+    def mail_for_mailinglist(self):
+        """Returns a tuple of (mailaddress, secondaries)"""
+        primary = self.user.email
+        secondaries = set([self.user.email])
+
+        if self.recovery_mail:
+            secondaries.add(self.recovery_mail)
+
+        if self.mailinglist_mail:
+            primary = self.mailinglist_mail
+            secondaries.add(primary)
+
+        return primary, secondaries-set([primary])
 
 class GroupProfile(models.Model):
     group = models.OneToOneField(Group, on_delete=models.CASCADE)
@@ -52,7 +70,8 @@ def make_username(vorname, nachname):
         nachname = nachname.split(",")[0]
     b = nachname.split(" ")[-1]
     username = f"{a}.{b}".lower()
-    repl = { 'ö': 'oe', 'ä': 'ae', 'ü': 'ue', 'ß': 'ss', 'ã': 'a', ' ': '_' }
+    repl = { 'ö': 'oe', 'ä': 'ae', 'ü': 'ue', 'ß': 'ss', 'ã': 'a', ' ': '_',
+             'á':'a', 'é': 'e'}
     for k,v in repl.items():
         username = username.replace(k,v)
     assert username.encode('ascii').decode('ascii') == username

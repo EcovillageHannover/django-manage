@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+import itertools
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .utils import set_cookie
 import csv
+import logging
 import io
 
 from .models import Poll, Item, Vote, PollCollection
@@ -156,18 +158,36 @@ def export_raw(request, poll_id):
         status=200)
     response['Content-Disposition'] = f'attachment; filename="poll_{poll_id}.csv'
     out = csv.writer(response)
-    out.writerow(
-        ["PollID", "Vorname", "Nachname", "E-Mail", "Auswahl", "Abstimmungszeitpunkt"]
-    )
-    for vote in votes:
-        out.writerow([
-            poll_id,
-            vote.user.first_name,
-            vote.user.last_name,
-            vote.user.email,
-            vote.item.export_key or vote.item.value,
-            vote.updated_at.strftime("%d.%m.%Y %H:%M")
-        ])
+    header = ["PollID", "EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail", "Abstimmungszeitpunkt"]
+    if poll.poll_type == Poll.RADIO:
+        header += ["Auswahl"]
+    elif poll.poll_type == Poll.YESNONONE:
+        header += [i.export_key or i.value for i in poll.items]
+    else:
+        return HttpResponse('Exporting this poll type is not supported', status=503)
+    
+    out.writerow(header)
+    for user, votes in itertools.groupby(sorted(votes, key=lambda V: V.user.id), lambda V: V.user):
+        votes = list(votes)
+        mnr = ""
+        if hasattr(user, 'userprofile') and user.userprofile.evh_mitgliedsnummer:
+            mnr = str(user.userprofile.evh_mitgliedsnummer)
+        row = [poll_id,
+               mnr,
+               user.first_name,
+               user.last_name,
+               user.email,
+               votes[0].updated_at.strftime("%d.%m.%Y %H:%M")]
+        if poll.poll_type == Poll.RADIO:
+            logger.info("%s: %s", user, set([v.item for v in votes]))
+            assert len(set([v.item for v in votes])) == 1
+            row += [votes[0].item.export_key or vote.item.value]
+        elif poll.poll_type == Poll.YESNONONE:
+            d = {v.item: v.text for v in votes}
+            assert len(poll.items) == len(votes)
+            # logging.info("%s %s %s", user, len(poll.items), len(votes))
+            row += [d[i] for i in poll.items]
+        out.writerow(row)
 
 
     return response

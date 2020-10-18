@@ -1,4 +1,7 @@
+# coding: utf-8
+
 from django import forms
+from django.contrib import messages
 from django.contrib.auth.forms import PasswordResetForm as DjangoPasswordResetForm
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -8,7 +11,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.db.models import Q
-from .models import GroupProfile
+from .models import GroupProfile, UserProfile
+from .mailman import Mailman
 
 import logging
 logger = logging.getLogger(__name__)
@@ -84,4 +88,46 @@ class PasswordResetForm(DjangoPasswordResetForm):
                 user_email, html_email_template_name=html_email_template_name,
             )
             logger.info("Sent recovery email to: %s", user_email)
-        
+
+
+class UserProfileForm(forms.Form):
+    def __init__(self, *args,  instance=None, **kwargs):
+        super(UserProfileForm, self).__init__(*args, **kwargs)
+        assert instance, "No user given"
+        if hasattr(instance, 'userprofile'):
+            primary, s = instance.userprofile.mail_for_mailinglist()
+            emails = [primary] + list(s)
+        else:
+            primary = instance.email
+            emails = [instance.email]
+
+        self.fields['mailinglist_mail'] = \
+            forms.ChoiceField(
+                label="Mailaddresse für Mailinglisten",
+                help_text="An diese Mailaddresse werden wir Mailinglisten-Nachrichten schicken.",
+                choices=sorted([(x, x) for x in emails]),
+                widget=forms.RadioSelect
+            )
+
+        self.initial['mailinglist_mail'] = primary
+
+    def save(self, request):
+        user = request.user
+        if not hasattr(user, "userprofile"):
+            userprofile = UserProfile.objects.create(user=user)
+        else:
+            userprofile = user.userprofile
+
+        if userprofile.mailinglist_mail != self.cleaned_data['mailinglist_mail']:
+            previous_primary = userprofile.mailinglist_mail
+            primary = self.cleaned_data['mailinglist_mail']
+            userprofile.mailinglist_mail = primary
+            userprofile.save()
+
+            m = Mailman()
+            for mlist in m.get_lists(previous_primary):
+                rc0 = m.subscribe(mlist, primary)
+                rc1 = m.unsubscribe(mlist, previous_primary)
+                messages.add_message(request, messages.SUCCESS,
+                                     f"Abonement für {mlist} wurde aktualisiert")
+                

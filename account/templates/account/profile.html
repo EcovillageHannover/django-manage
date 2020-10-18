@@ -28,6 +28,19 @@ Benutzerprofil
       {% endif %}
     </div>
   </div>
+  <div class="col-md-6">
+    <div class="card m-2 p-2">
+      <strong>Deine EVH Accounteinstellungen</strong>
+      <hr/>
+      <form method="POST" action="{% url 'account:user_profile_save' %}"> 
+        {% csrf_token %}
+        {% bootstrap_form user_profile_form %}
+        {% bootstrap_button "Speichern" button_type="submit" button_class="btn-info" %}
+      </form>
+    </div>
+  </div>
+
+
   {% if own_groups %}
   <div class="col-md-6">
     <div class="card m-2 p-2">
@@ -39,10 +52,7 @@ Benutzerprofil
     </div>
   </div>
   {% endif %}
-</div>
 
-
-<div class="row">
   <div class="col-md-6">
     <div class="card m-2 p-2">
       <strong>Du bist Mitglied in folgenden Gruppen:</strong><ul>
@@ -67,5 +77,8 @@ Benutzerprofil
   </div>
   {% endif %}
 </div>
+
+
+
 
 {% endblock %}

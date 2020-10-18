@@ -2,10 +2,12 @@
 
 import django.dispatch
 from django_auth_ldap.backend import LDAPBackend
+from django.contrib.auth import get_user_model
 from django.conf import settings
 from pathlib import Path
 from .mailman import Mailman
 from .models import LDAP
+
 import time
 import os
 
@@ -40,8 +42,7 @@ def user_changed_hook(sender, **kwargs):
                      'wettbewerb-externe',
                      'amsel-kollektiv',
                      'vorstand',
-                     'mitarbeiterinnen']) or \
-        user.username in set(['ina-marie.kapitola']):
+                     'mitarbeiterinnen']):
         if not os.path.exists(directory):
             os.mkdir(directory)
 
@@ -67,19 +68,31 @@ def group_member_remove_hook(sender, **kwargs):
     member = kwargs.get('member')
 
     m3 = Mailman()
-    rc = m3.unsubscribe(f"{group}", member['mail'])
-    rc = m3.unsubscribe(f"{group}-news", member['mail'])
+    if hasattr(member, 'userprofile'):
+        emails = member.userprofile.mail_for_mailinglist()
+    else:
+        emails = member.email
+
+    rc = m3.unsubscribe(f"{group}", emails)
+    rc = m3.unsubscribe(f"{group}-news", emails)
 
 
 group_member_add = django.dispatch.Signal(providing_args=["group", "member"])
 @django.dispatch.receiver(group_member_add)
 def group_member_add_hook(sender, **kwargs):
     group = kwargs.get('group')
-    member = kwargs.get('member')
+    member = kwargs.get('member') # Django User
+
+    logger.info(f"member: {member} {type(member)}")
 
     m3 = Mailman()
-    rc = m3.subscribe(f"{group}", member['mail'])
-    rc = m3.subscribe(f"{group}-news", member['mail'])
+    if hasattr(member, 'userprofile'):
+        emails = member.userprofile.mail_for_mailinglist()
+    else:
+        emails = member.email
+    rc = m3.subscribe(f"{group}", emails)
+    rc = m3.subscribe(f"{group}-news", emails)
+
 
 group_changed = django.dispatch.Signal(providing_args=["group"])
 @django.dispatch.receiver(group_changed)
@@ -94,10 +107,20 @@ def group_changed_hook(sender, **kwargs):
 
     group_name = str(group).title().replace("Ag-", "AG-").replace("Evh", "EVH")
 
+    group_nosync = f"{group}" in set(['ag-gastgeber', 'genossenschaft',
+                                      'ecotopia-vorstand', 'ecotopia-aufsichtsrat'])
+    # group_nosync = True
+
 
     if mlist_discuss in mlists or mlist_news in mlists:
         l = LDAP()
         members = l.group_members(group)
+        UserModel = get_user_model()
+        for member in members:
+            try:
+                member['user'] = UserModel.objects.get(username=member['username'])
+            except UserModel.DoesNotExist:
+                pass
         owners = l.group_owners(group)
 
         if mlist_discuss in mlists:
@@ -108,7 +131,10 @@ def group_changed_hook(sender, **kwargs):
                            subject_prefix=f"[{group_name}] ",
                            )
             start = time.time()
-            m3.sync_list(mlist, members=members, owners=owners, strict=True)
+            if not group_nosync:
+                m3.sync_list(mlist, members=members, owners=owners, strict=True)
+            else:
+                logger.warning("Not syncing members for group: %s", mlist)
             end = time.time()
             logger.info("... took %.2f seconds", end-start)
 
@@ -123,7 +149,10 @@ def group_changed_hook(sender, **kwargs):
                            subject_prefix=f"[{prefix}] ",
                            )
             start = time.time()
-            m3.sync_list(mlist, members=members, owners=owners, strict=False)
+            if not group_nosync:
+                m3.sync_list(mlist, members=members, owners=owners, strict=False)
+            else:
+                logger.warning("Not syncing members for group: %s", mlist)
             end = time.time()
             logger.info("... took %.2f seconds", end-start)
 

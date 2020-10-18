@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django import forms
 from django.utils.html import mark_safe
+from django.views.decorators.csrf import csrf_exempt
 
 
 from evh.utils import format_token, parse_token
@@ -29,15 +30,16 @@ class SubscribeForm(forms.Form):
                                             choices=newsletter_config.form_choices())
 
 
+@csrf_exempt
 def subscribe(request):
     context = { }
     
     if request.method == 'POST':
         form = SubscribeForm(request.POST)
         if form.is_valid():
-            newsletters = form.cleaned_data['newsletters'] + ['genossenschaft-news']
+            newsletters = form.cleaned_data['newsletters']
             mask = newsletter_config.encode(newsletters)
-            email = 'stettberger@dokucode.de'
+            email = form.cleaned_data['mail']
             logger.info("Subscribe %s to: %s (%d)", email, newsletters, mask)
 
             token = format_token(config.SECRET_KEY, ['subscribe', email, hex(mask)])
@@ -62,6 +64,7 @@ def subscribe(request):
             context['form'] = SubscribeForm()
     else:
         context['form'] = SubscribeForm()
+        context['form'].initial['newsletters'] = newsletter_config.initial
 
     return render(request, "newsletter/subscribe.html", context)
 

@@ -22,6 +22,7 @@ from django.template.loader import render_to_string
 from account import signals
 from account.signals import user_changed
 from impersonate.signals import session_begin
+from django.contrib.auth import get_user_model
 
 
 
@@ -255,13 +256,34 @@ def profile(request):
     user = LDAPBackend().populate_user(request.user.username)
     user = request.user
     l = LDAP()
+    if hasattr(user, 'userprofile'):
+        mlist_primary, _ = user.userprofile.mail_for_mailinglist()
+    else:
+        mlist_primary = user.email
+
     return render(request, 'account/profile.html', {
         'user': request.user,
+        'user_profile_form': UserProfileForm(instance=request.user),
         'groups': [group.name for group in user.groups.all()],
         'own_groups':  l.owned_groups(user.username),
         'managed_users': l.managed_users(user.username),
-        'mlists': Mailman().get_lists(user.email).values(),
+        'mlists': Mailman().get_lists(mlist_primary).values(),
     })
+
+@login_required
+def user_profile_save(request):
+    user = request.user
+
+    form = UserProfileForm(request.POST, instance=user)
+    if form.is_valid():
+        form.save(request)
+        messages.add_message(request, messages.SUCCESS,
+                             f"Deine Einstellungen wurden gespeichert")
+    else:
+        messages.add_message(request, messages.ERROR,
+                             f"Fehler beim Speichern")
+    return HttpResponseRedirect(reverse('account:profile'))
+
 
 @login_required
 def impersonate(request, user):
@@ -312,6 +334,24 @@ def __resolve_group(request, group):
 
     return groups[0]
 
+def __resolve_user(username):
+    # Resolve user
+    UserModel = get_user_model()
+    try:
+        user = UserModel.objects.get(username=username)
+    except UserModel.DoesNotExist:
+        return None
+    return user
+
+
+def __user_in_group(user, group):
+    """Checks if user is in group. Double check via LDAP"""
+    if group.name in user.groups.values_list('name',flat=True) or \
+       user.username in set([g['username'] for g in LDAP().group_members(group)]):
+        return True
+    return False
+
+
 @login_required
 def group(request, group):
     group = __resolve_group(request, group)
@@ -349,79 +389,37 @@ def group(request, group):
 
 
 @login_required
-def group_member_remove(request, group, user):
-    group = __resolve_group(request, group)
-    if isinstance(group, HttpResponse):
-        return group
-    l = LDAP()
-
-    User = LDAP().search_user(user)
-    if not User:
-        messages.add_message(request, messages.ERROR,
-                             f"Nutzer '{user}' nicht gefunden!")
-
-    members = l.group_members(group)
-    for member in members:
-        if member["username"] == user:
-            break
-    else:
-        return HttpResponse('Group Member not found', status=404)
-
-    if request.method == 'POST':
-        if LDAP().group_member_change(group, user, mode="remove"):
-            messages.add_message(request, messages.SUCCESS,
-                                 f"Nutzer {user} entfernt.")
-
-            user_changed.send(sender=group_member_remove, username=user)
-            signals.group_member_remove.send(sender=group_member_remove,
-                                             group=group, member=User)
-        else:
-            messages.add_message(request, messages.ERROR,
-                                 f"Nutzer {user} entfernen fehlgeschlagen.")
-        return HttpResponseRedirect(request.POST['next'])
-
-
-    return render(request, 'account/confirm.html', dict(
-        title="Gruppenmitglied entfernen?",
-        question=f"Soll der Nutzer <strong>{user}</strong> aus der Gruppe {group} entfernt werden?",
-        yes="Ja, Mitglied entfernen",
-        next=reverse('account:group', args=[group])
-    ))
-
-@login_required
 def group_member_add(request, group):
+    # Resolve Group
     group = __resolve_group(request, group)
     if isinstance(group, HttpResponse):
         return group
     group_url = reverse('account:group', args=[group])
 
-    user = request.GET.get("user", "")
-    User = LDAP().search_user(user)
-    if not User:
+    # Resolve User
+    username = request.GET.get("user", "")
+    user = __resolve_user(username)
+    if not user:
         messages.add_message(request, messages.ERROR,
-                             f"Nutzer '{user}' nicht gefunden!")
+                             f"Nutzer '{username}' nicht gefunden!")
+        return HttpResponseRedirect(group_url)
+    full_name = "%s %s (%s)" %(user.first_name, user.last_name, user.username)
+
+    # Check user is in Group (DB and LDAP)
+    if __user_in_group(user, group):
+        messages.add_message(request, messages.INFO,
+                             f"Nutzer {full_name} ist bereits in der Gruppe!")
         return HttpResponseRedirect(group_url)
 
-    username = User["username"]
-    full_name = "%s %s (%s)" %(User["vorname"], User["nachname"], User["username"])
-
-    
-    members = LDAP().group_members(group)
-    for member in members:
-        if member["username"] == username:
-            messages.add_message(request, messages.INFO,
-                                 f"Nutzer {full_name} ist bereits in der Gruppe!")
-            return HttpResponseRedirect(group_url)
-
     if request.method == 'POST':
-        if LDAP().group_member_change(group, username, mode="add"):
+        if LDAP().group_member_change(group.name, username, mode="add"):
             messages.add_message(request, messages.SUCCESS,
                                  f"Nutzer {username} hinzugefügt.")
 
             user_changed.send(sender=group_member_add, username=username)
             signals.group_member_add.send(sender=group_member_add,
                                           group=group,
-                                          member=User)
+                                          member=user)
         else:
             messages.add_message(request, messages.ERROR,
                                  f"Nutzer {username} hinzufügen fehlgeschlagen.")
@@ -431,10 +429,51 @@ def group_member_add(request, group):
 
     return render(request, 'account/confirm.html', dict(
         title="Gruppenmitglied hinzufügen?",
-        question=f"Soll der Nutzer <strong>{full_name}</strong> der Gruppe {group} hinzugefügt werden?",
+        question=f"Soll der Nutzer <strong>{full_name}</strong> der Gruppe {group.name} hinzugefügt werden?",
         yes="Ja, Mitglied hinzufügen?",
         next=group_url
     ))
+
+
+@login_required
+def group_member_remove(request, group, username):
+    group_url = reverse('account:group', args=[group])
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+
+    user = __resolve_user(username)
+    if not user:
+        messages.add_message(request, messages.ERROR,
+                             f"Nutzer '{username}' nicht gefunden!")
+        return HttpResponseRedirect(group_url)
+
+
+    if not __user_in_group(user, group):
+        messages.add_message(request, messages.INFO,
+                             f"Nutzer {user} ist nicht in der Gruppe!")
+        return HttpResponseRedirect(group_url)
+
+    if request.method == 'POST':
+        if LDAP().group_member_change(group.name, user.username, mode="remove"):
+            messages.add_message(request, messages.SUCCESS,
+                                 f"Nutzer {user.username} entfernt.")
+
+            user_changed.send(sender=group_member_remove, username=user.username)
+            signals.group_member_remove.send(sender=group_member_remove,
+                                             group=group, member=user)
+        else:
+            messages.add_message(request, messages.ERROR,
+                                 f"Nutzer {user.username} entfernen fehlgeschlagen.")
+        return HttpResponseRedirect(request.POST['next'])
+
+    return render(request, 'account/confirm.html', dict(
+        title="Gruppenmitglied entfernen?",
+        question=f"Soll der Nutzer <strong>{user}</strong> aus der Gruppe {group} entfernt werden?",
+        yes="Ja, Mitglied entfernen",
+        next=reverse('account:group', args=[group])
+    ))
+
 
 
 from .management.commands.invite import AccountInformation, send_invite_mail

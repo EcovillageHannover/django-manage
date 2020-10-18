@@ -67,7 +67,6 @@ class Mailman:
 
             mlist.set_template('list:member:regular:footer',
                                settings.BASE_URL + reverse('account:group_mailman', args=[group]))
-            print(mlist.templates)
 
 
         if mlist.list_name in ('vorstand', 'aufsichtsrat',
@@ -90,8 +89,6 @@ class Mailman:
 
 
     def sync_list(self, mlist, members, owners=None, strict=True):
-        members = bidict({u['username'].lower(): u['mail'].lower() for u in members})
-        members_mails = set(members.values())
         subscribers = []
         page_idx = 1
         while True:
@@ -100,26 +97,44 @@ class Mailman:
             subscribers.extend(page)
             logger.debug("Getting Subscriber Page %d", page_idx)
             if len(page) < 100: break
-        print(type(subscribers))
-
         subscriber_mails = set([m.address.email.lower() for m in subscribers])
 
-        def sync_tag(tag, should_set, is_set, add, remove, strict=True):
+        member_should_set = set()
+        member_should_not_set = set()
+
+        for member in members:
+            if member['user'] and hasattr(member['user'], 'userprofile'):
+                primary, secondaries = member['user'].userprofile.mail_for_mailinglist()
+                member_should_set.add(primary.lower())
+                for m in secondaries:
+                    member_should_not_set.add(m.lower())
+            else:
+                member_should_set.add(member['mail'].lower())
+
+        def sync_tag(tag, is_set, should_set, add, remove, should_not_set=set(), strict=True):
             for element in should_set - is_set:
                 logger.info(f"Add[{tag}] {element} to list {mlist}")
                 add(element)
 
+            for element in is_set & should_not_set:
+                logger.info(f"Remove[{tag}] {element} to list {mlist}")
+                remove(element)
+                is_set.remove(element)
+
             # If we do not sync strict, we are fine here
-            UserModel = get_user_model()
-            for x in is_set - should_set:
-                print(x)
+            #for x in is_set - should_set:
+            #    print(x)
             if not strict: return
 
             for element in is_set - should_set:
                 logger.info(f"Remove[{tag}] {element} from list {mlist}")
                 remove(element)
 
-        sync_tag('subscriber', members_mails, subscriber_mails,
+
+        sync_tag('subscriber',
+                 is_set=subscriber_mails,
+                 should_set=member_should_set,
+                 should_not_set=member_should_not_set,
                  add=lambda subscriber: mlist.subscribe(subscriber,
                                                    pre_verified=True,
                                                    pre_confirmed=True,
@@ -130,7 +145,9 @@ class Mailman:
         if owners is not None:
             owner_mails = set([u['mail'].lower() for u in owners])
             moderator_mails = set([m.address.email.lower() for m in mlist.moderators])
-            sync_tag('moderator', owner_mails, moderator_mails,
+            sync_tag('moderator',
+                     is_set=moderator_mails,
+                     should_set=owner_mails, 
                      add=lambda mail: mlist.add_moderator(mail),
                      remove=lambda mail: mlist.remove_moderator(mail))
 
@@ -143,11 +160,24 @@ class Mailman:
 
         site_admins = set(['dennis.klose@my-evh.de', 'christian.dietrich@my-evh.de'])
         m3_owner_mails = set([m.address.email for m in mlist.owners])
-        sync_tag('owner', site_admins, m3_owner_mails,
+        sync_tag('owner',
+                 should_set=site_admins,
+                 is_set=m3_owner_mails,
                  add=lambda mail: mlist.add_owner(mail),
                  remove=lambda mail: mlist.remove_owner(mail))
 
     def subscribe(self, mlist, subscriber):
+        ################################################################
+        # Duck-Type for Map[Mail, bool]
+        if type(subscriber) is tuple:
+            primary, secondaries = subscriber
+            self.subscribe(mlist, primary)
+            for mail in secondaries:
+                self.unsubscribe(mlist, mail)
+            return
+
+        ################################################################
+        # Acutal Subscribe
         try:
             list_id = f"{mlist}@{settings.MAILMAN_LIST_DOMAIN}"
             mlist = self.m3.get_list(list_id)
@@ -160,12 +190,19 @@ class Mailman:
                             pre_confirmed=True,
                             pre_approved=True)
             logger.info("Subscribed %s on %s", subscriber, mlist)
+            return 1
         except HTTPError as e:
+            logger.info('%s', e)
             return 0
 
-        return 1
 
     def unsubscribe(self, mlist, subscriber):
+        if type(subscriber) is tuple:
+            primary, secondaries = subscriber
+            for mail in [primary] + list(secondaries):
+                self.unsubscribe(mlist, mail)
+            return
+
         try:
             list_id = f"{mlist}@{settings.MAILMAN_LIST_DOMAIN}"
             mlist = self.m3.get_list(list_id)
@@ -175,7 +212,9 @@ class Mailman:
         try:
             mlist.unsubscribe(subscriber)
             logger.info("Unsubscribed %s on %s", subscriber, mlist)
+            return 1
         except HTTPError as e:
+            logger.info('%s', e)
             return 0
-
-        return 1
+        except ValueError:
+            return 0

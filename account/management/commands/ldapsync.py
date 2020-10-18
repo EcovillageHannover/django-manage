@@ -38,7 +38,8 @@ class Command(BaseCommand):
                 continue
             if group.startswith('ag-') and group != 'ag-gastgeber':
                 news = group + "-news"
-                print(news)
-            #    m.domain.create_list(news)
+                #    m.domain.createlist(news)
+                # print(group)
+
 
             group_changed.send(sender=self.__class__, group=group)
