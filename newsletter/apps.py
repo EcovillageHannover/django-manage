@@ -45,6 +45,7 @@ class EVHNewsletterConfig(NewsletterConfig):
     newsletters = [
         # mailman-name, label, url
         ('genossenschaft-news', 'Allgemeiner Newsletter der ecovillage hannover e.G.', None),
+        ('dorfrat-kronsberg-news', 'Dorfrat Kronsberg', None),
         ('ag-standorte-news', 'A1 - Klärung weiterer längerfristiger Standorte',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/weitere-standorte'),
         ('ag-gemeinschaft-news', 'A2 - Soziales Leben im Ecovillage',
@@ -55,7 +56,7 @@ class EVHNewsletterConfig(NewsletterConfig):
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/quartiersflaechenplanung'),
         ('wohngruppen-news', 'K3 - Zusammenfinden von Wohngruppen und Baugemeinschaften',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/wohngruppen'),
-        ('ag-energie-news', 'K4 - Energie- und Wasserkonzept Kronsberg',
+        ('ag-energie-news', 'K4 - Energiekonzept Kronsberg',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/energiekonzept'),
         ('ag-mobilitaet-news', 'K5 - Mobilitätskonzept Kronsberg',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/mobilitaetskonzept'),

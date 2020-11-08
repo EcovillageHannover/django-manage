@@ -38,6 +38,10 @@ class Mailman:
                 return {}
             return {mlist.list_name: mlist for mlist in mlists}
 
+    def get_list(self, name):
+        list_id = f"{name}@{settings.MAILMAN_LIST_DOMAIN}"
+        return self.m3.get_list(list_id)
+
     def config_list(self, group, mlist, type, **kwargs):
         config = dict(
             send_welcome_message=False,
@@ -51,11 +55,15 @@ class Mailman:
         if type == "discuss":
             config['subscription_policy'] = "confirm"
             config["allow_list_posts"] = True
-            config['reply_goes_to_list'] = "point_to_list"
+            if 'ag-' in mlist.list_name:
+                config['reply_goes_to_list'] = "point_to_list"
+            else:
+                config['reply_goes_to_list'] = "no_munging"
             config['default_member_action'] = "accept"
             config['default_nonmember_action'] = "accept"
             config['advertised'] = False
 
+            
 
         elif type == "news":
             config['subscription_policy'] = "open"
@@ -89,6 +97,37 @@ class Mailman:
 
 
     def sync_list(self, mlist, members, owners=None, strict=True):
+        UserModel = get_user_model()
+        # Calculate the SHOULD set
+        member_should_set = set()
+        member_should_not_set = set()
+
+        def process_user(user):
+            if hasattr(user, 'userprofile'):
+                userprofile = user.userprofile
+                primary, secondaries = userprofile.mail_for_mailinglist()
+                member_should_set.add(primary.lower())
+                for m in secondaries:
+                    member_should_not_set.add(m.lower())
+            else:
+                member_should_set.add(user.email)
+
+        for member in members:
+            userprofile = None
+            if isinstance(member, str):
+                member_should_set.add(member)
+            elif isinstance(member, dict):
+                if member['user']:
+                    process_user(member['user'])
+                else:
+                    member_should_set.add(member['mail'].lower())
+            elif isinstance(member, UserModel):
+                process_user(member)
+            else:
+                logger.warning("Invalid argument to sync list: %s", member)
+                continue
+
+        # Calculate the IS set
         subscribers = []
         page_idx = 1
         while True:
@@ -98,18 +137,6 @@ class Mailman:
             logger.debug("Getting Subscriber Page %d", page_idx)
             if len(page) < 100: break
         subscriber_mails = set([m.address.email.lower() for m in subscribers])
-
-        member_should_set = set()
-        member_should_not_set = set()
-
-        for member in members:
-            if member['user'] and hasattr(member['user'], 'userprofile'):
-                primary, secondaries = member['user'].userprofile.mail_for_mailinglist()
-                member_should_set.add(primary.lower())
-                for m in secondaries:
-                    member_should_not_set.add(m.lower())
-            else:
-                member_should_set.add(member['mail'].lower())
 
         def sync_tag(tag, is_set, should_set, add, remove, should_not_set=set(), strict=True):
             for element in should_set - is_set:

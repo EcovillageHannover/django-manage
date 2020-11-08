@@ -23,6 +23,7 @@ from account import signals
 from account.signals import user_changed
 from impersonate.signals import session_begin
 from django.contrib.auth import get_user_model
+import sys
 
 
 
@@ -84,7 +85,9 @@ def create(request, token=None):
                          vorname, nachname, username, mail)
             except Exception as e:
                 messages.add_message(request, messages.ERROR, f"Beim Erstellen des Accounts ist etwas schief gelaufen. Kontaktieren Sie das Team Digitales: {e}")
-                logger.error("account/create/error: {e}")
+                logger.error(f"account/create/error: {e}")
+                import traceback
+                logger.error("%s", traceback.format_exc())
                 return render(request, 'account/create.html', context)
         else:
             messages.add_message(request, messages.ERROR, "Deine Zustimmung ist erforderlich um einen Account anzulegen.")
@@ -334,14 +337,18 @@ def __resolve_group(request, group):
 
     return groups[0]
 
-def __resolve_user(username):
+def __resolve_user(username, email=None):
     # Resolve user
     UserModel = get_user_model()
     try:
-        user = UserModel.objects.get(username=username)
+        return UserModel.objects.get(username=username)
     except UserModel.DoesNotExist:
-        return None
-    return user
+        if not email: return None
+        try:
+            return UserModel.objects.get(email=email)
+        except UserModel.DoesNotExist:
+            pass
+    return None
 
 
 def __user_in_group(user, group):
@@ -398,7 +405,8 @@ def group_member_add(request, group):
 
     # Resolve User
     username = request.GET.get("user", "")
-    user = __resolve_user(username)
+    user = __resolve_user(username, email=username)
+
     if not user:
         messages.add_message(request, messages.ERROR,
                              f"Nutzer '{username}' nicht gefunden!")

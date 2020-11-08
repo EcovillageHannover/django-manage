@@ -170,18 +170,24 @@ def export_raw(request, poll_id):
     for user, votes in itertools.groupby(sorted(votes, key=lambda V: V.user.id), lambda V: V.user):
         votes = list(votes)
         mnr = ""
-        if hasattr(user, 'userprofile') and user.userprofile.evh_mitgliedsnummer:
-            mnr = str(user.userprofile.evh_mitgliedsnummer)
+        email = user.email
+        if hasattr(user, 'userprofile'):
+            email, _ = user.userprofile.mail_for_mailinglist()
+
+            if user.userprofile.evh_mitgliedsnummer:
+                mnr = str(user.userprofile.evh_mitgliedsnummer)
+
         row = [poll_id,
                mnr,
                user.first_name,
                user.last_name,
-               user.email,
+               email,
                votes[0].updated_at.strftime("%d.%m.%Y %H:%M")]
         if poll.poll_type == Poll.RADIO:
             logger.info("%s: %s", user, set([v.item for v in votes]))
             assert len(set([v.item for v in votes])) == 1
-            row += [votes[0].item.export_key or vote.item.value]
+            logger.info("%s", votes)
+            row += [votes[0].item.export_key or votes[0].item.value]
         elif poll.poll_type == Poll.YESNONONE:
             d = {v.item: v.text for v in votes}
             assert len(poll.items) == len(votes)

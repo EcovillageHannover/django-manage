@@ -227,7 +227,7 @@ IMPERSONATE = {
 }
 
 CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'")
-CSP_FRAME_ANCESTORS = ("'self'", "*.my-evh.de", "*.ecovillage-hannover.de")
+CSP_FRAME_ANCESTORS = ("'self'", "*.my-evh.de", "ecovillage-hannover.de", "*.ecovillage-hannover.de")
 
 
 from .settings_local import *

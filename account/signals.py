@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 KIRBY_TEMPLATE = """<?php
 return [
     'id' => '{username}',
-    'name' => '{username}',
+    'name' => '{fullname}',
     'email' => '{email}',
     'language' => 'de',
     'role' => 'LdapUser'
@@ -47,6 +47,7 @@ def user_changed_hook(sender, **kwargs):
             os.mkdir(directory)
 
         index_php_content = KIRBY_TEMPLATE.format(
+            fullname=user.get_full_name(),
             username=user.username,
             email=user.email
         )
@@ -70,6 +71,8 @@ def group_member_remove_hook(sender, **kwargs):
     m3 = Mailman()
     if hasattr(member, 'userprofile'):
         emails = member.userprofile.mail_for_mailinglist()
+    elif isinstance(member, dict):
+        emails = member['mail']
     else:
         emails = member.email
 
@@ -88,6 +91,8 @@ def group_member_add_hook(sender, **kwargs):
     m3 = Mailman()
     if hasattr(member, 'userprofile'):
         emails = member.userprofile.mail_for_mailinglist()
+    elif isinstance(member, dict):
+        emails = member['mail']
     else:
         emails = member.email
     rc = m3.subscribe(f"{group}", emails)
@@ -105,10 +110,11 @@ def group_changed_hook(sender, **kwargs):
     mlist_discuss = f"{group}"
     mlist_news = f"{group}-news"
 
-    group_name = str(group).title().replace("Ag-", "AG-").replace("Evh", "EVH")
+    group_name = str(group).title().replace("Ag-", "AG-").replace('Wg-', 'WG-').replace("Evh", "EVH")
+    group_name = group_name.replace('laeufe', 'läufe')
 
     group_nosync = f"{group}" in set(['ag-gastgeber', 'genossenschaft',
-                                      'ecotopia-vorstand', 'ecotopia-aufsichtsrat'])
+                                      'ecotopia-vorstand', 'ecotopia-aufsichtsrat', 'ecotopia-mitglieder'])
     # group_nosync = True
 
 
@@ -143,7 +149,7 @@ def group_changed_hook(sender, **kwargs):
             logger.info(f"Sync Mailinglist {mlist}")
             prefix = f"{group_name}: Ankündigung"
             if group == 'genossenschaft':
-                prefix = 'EVH-Alle'
+                prefix = 'EVH Newsletter'
             m3.config_list(group, mlist, type="news",
                            display_name=prefix,
                            subject_prefix=f"[{prefix}] ",

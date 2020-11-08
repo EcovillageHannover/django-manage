@@ -43,17 +43,21 @@ def subscribe(request):
             logger.info("Subscribe %s to: %s (%d)", email, newsletters, mask)
 
             token = format_token(config.SECRET_KEY, ['subscribe', email, hex(mask)])
-            msg_plain = render_to_string('newsletter/confirmation.txt', dict(
+            context =  dict(
                 config=config,
                 token=token.decode(),
                 newsletters=newsletters
-            ))
+            )
+            msg_plain = render_to_string('newsletter/confirmation.txt', context)
+            msg_html = render_to_string('newsletter/confirmation.html', context)
+
 
             msg = EmailMultiAlternatives(subject="[EVH] Bestätigung zur Newsletteranmeldung",
                                  body=msg_plain,
                                  from_email=config.EMAIL_FROM,
                                  to=[email],
                                  reply_to=[config.EMAIL_FROM])
+            msg.attach_alternative(msg_html, "text/html")
             msg.send()
 
             messages.add_message(request, messages.SUCCESS,
