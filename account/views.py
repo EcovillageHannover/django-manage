@@ -134,14 +134,6 @@ def __create(request, context, vorname, nachname, username, mail):
 
     User = LDAP().search_user(username)
 
-
-    ################################################################
-    # Login user
-    user = authenticate(username=username, password=password)
-    login(request, user)
-
-    user_changed.send(sender=create, username=username)
-
     ################################################################
     # Initial Groups
     invite = Invite.find_by_mail(mail)
@@ -153,6 +145,13 @@ def __create(request, context, vorname, nachname, username, mail):
                                           member=User)
             messages.add_message(request, messages.SUCCESS,
                                  "Du wurdest der Gruppe %s hinzugefügt" % group)
+
+    ################################################################
+    # Login user
+    user = authenticate(username=username, password=password)
+    login(request, user)
+
+    user_changed.send(sender=create, username=username)
 
     ################################################################
     # Mail versenden
@@ -404,12 +403,12 @@ def group_member_add(request, group):
     group_url = reverse('account:group', args=[group])
 
     # Resolve User
-    username = request.GET.get("user", "")
-    user = __resolve_user(username, email=username)
+    param = request.GET.get("user", "")
+    user = __resolve_user(param, email=param)
 
     if not user:
         messages.add_message(request, messages.ERROR,
-                             f"Nutzer '{username}' nicht gefunden!")
+                             f"Nutzer '{param}' nicht gefunden!")
         return HttpResponseRedirect(group_url)
     full_name = "%s %s (%s)" %(user.first_name, user.last_name, user.username)
 
@@ -420,17 +419,17 @@ def group_member_add(request, group):
         return HttpResponseRedirect(group_url)
 
     if request.method == 'POST':
-        if LDAP().group_member_change(group.name, username, mode="add"):
+        if LDAP().group_member_change(group.name, user.username, mode="add"):
             messages.add_message(request, messages.SUCCESS,
-                                 f"Nutzer {username} hinzugefügt.")
+                                 f"Nutzer {user.username} hinzugefügt.")
 
-            user_changed.send(sender=group_member_add, username=username)
+            user_changed.send(sender=group_member_add, username=user.username)
             signals.group_member_add.send(sender=group_member_add,
                                           group=group,
                                           member=user)
         else:
             messages.add_message(request, messages.ERROR,
-                                 f"Nutzer {username} hinzufügen fehlgeschlagen.")
+                                 f"Nutzer {user.username} hinzufügen fehlgeschlagen.")
 
         return HttpResponseRedirect(request.POST['next'])
 

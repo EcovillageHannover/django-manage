@@ -8,7 +8,7 @@
 {% block content %}
 {% if form %}
 
-<h2>Ecovillage Newsletter Anmeldung</h2>
+<h2>ecovillage Newsletter: Anmeldung</h2>
 
 <p>
   <strong>Achtung!</strong> Hier kannst du unseren unregelmäßigen
@@ -25,5 +25,10 @@ angegebene E-Mail-Adresse. Dort musst du den Bestätigungslink
   {% bootstrap_form form layout='inline' %}
   {% bootstrap_button "Eintragen" button_type="submit" button_class="btn-info" %}
 </form>
+
+<p><br/>Um dich von diesen Newslettern wieder zu entfernen, klicke <a href="{% url 'newsletter:unsubscribe' %}">hier.</a></p>
+
 {% endif %}
+
+
 {% endblock %}

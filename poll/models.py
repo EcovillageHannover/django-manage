@@ -94,7 +94,7 @@ class Poll(models.Model):
                                  choices=TYPE_CHOICES,
                                  default=RADIO)
 
-    question = models.CharField(max_length=255, unique=True)
+    question = models.CharField(max_length=255, unique=False)
     description = models.TextField(default="")
 
     is_published = models.BooleanField(default=True)
@@ -189,6 +189,8 @@ class Item(models.Model):
     export_key = models.CharField(max_length=255, blank=True, null=True, unique=False)
     position = models.SmallIntegerField(default=1)
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
+    max_votes = models.SmallIntegerField(default=-1,blank=True,null=True)
+
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

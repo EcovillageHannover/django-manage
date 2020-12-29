@@ -2,12 +2,28 @@
 
 from django import forms
 from .models import Poll, Item, Vote, PollCollection
+from  django.utils.html import mark_safe
 
 import logging
 logger = logging.getLogger(__name__)
 
 class HorizontalRadioSelect(forms.RadioSelect):
     template_name = 'horizontal_select.html'
+
+class DisableRadioSelect(forms.RadioSelect):
+    def __init__(self, attrs=None, choices=(), disabled_choices=()):
+        super(DisableRadioSelect, self).__init__(attrs, choices=choices)
+        self.disabled_choices = disabled_choices
+
+    def create_option(self, *args, **kwargs):
+        option = super(DisableRadioSelect, self).create_option(*args, **kwargs)
+        logger.info("%s", option)
+
+        if option.get('value') in self.disabled_choices:
+            option['attrs']['disabled'] = True
+            option['attrs']['class'] += ' disabled'
+
+        return option
 
 class PollForm(forms.ModelForm):
     class Meta:
@@ -51,16 +67,37 @@ class PollForm(forms.ModelForm):
         else:
             self.choices = []
             items = Item.objects.filter(poll=self.instance)
+
+            disabled_choices = []
             for item in sorted(items, key=lambda i: i.position):
-                self.choices.append((item.id, item.value))
+                choice = (item.id, item.value)
+
+                # Some Choices are already full
+                if item.max_votes >= 0:
+                    votes  = Vote.objects.filter(poll=self.instance, item=item)
+                    users = [v.user for v in votes]
+                    choice = (item.id, item.value + " (Plätze: %d/%d)" % (len(votes), item.max_votes))
+                    if len(votes) >= item.max_votes and self.user not in users:
+                        disabled_choices.append(item.id)
+                        choice = (choice[0], mark_safe(f"<span style='color: gray;'>{choice[1]}</span>"))
+
+                # Select Choices
+                self.choices.append(choice)
+
+
+
+
+
+            logger.info("Disabled Choices: %s", disabled_choices)
 
             if self.instance.poll_type == Poll.RADIO:
                 self.fields['choice'] = forms.ChoiceField(
                     choices=self.choices,
-                    widget=forms.RadioSelect
+                    widget=DisableRadioSelect
                 )
                 if len(self.votes) > 0 and self.votes[0].item:
                     self.initial['choice'] = self.votes[0].item.pk
+                self.fields['choice'].widget.disabled_choices = disabled_choices
             else:
                 self.fields['choices'] = forms.MultipleChoiceField(
                     choices=self.choices,

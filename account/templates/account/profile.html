@@ -18,13 +18,15 @@ Benutzerprofil
         <li><strong>Benutzername:</strong> {{user.username}}</li>
         <li><strong>E-Mail:</strong> {{user.email}}</li>
       </ul>
-      {% if managed_users %}
       <strong>Deine verwalteten Nutzer</strong>
+      {% if managed_users %}
       <ul>
         {% for u in managed_users %}
         <li><a href="{% url 'account:impersonate' u.username %}">{{u.vorname}} {{u.nachname}}</a></li>
         {% endfor %}
       </ul>
+      {% else %}
+      <emph class="font-italic">Du verwaltest gerade keine anderen Nutzer. Wenn du Kinder hast und deren Account direkt, und ohne separates einloggen, verwalten willst, schreib uns eine Mail an: <strong>support@my-evh.de</strong></emph>
       {% endif %}
     </div>
   </div>

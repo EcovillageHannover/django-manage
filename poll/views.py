@@ -8,6 +8,7 @@ from django.contrib import messages
 from .utils import set_cookie
 import csv
 import logging
+logger = logging.getLogger("poll")
 import io
 
 from .models import Poll, Item, Vote, PollCollection
@@ -161,7 +162,9 @@ def export_raw(request, poll_id):
     header = ["PollID", "EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail", "Abstimmungszeitpunkt"]
     if poll.poll_type == Poll.RADIO:
         header += ["Auswahl"]
-    elif poll.poll_type == Poll.YESNONONE:
+    elif poll.poll_type == Poll.TEXT:
+        header += ["Text"]
+    elif poll.poll_type in (Poll.YESNONONE, Poll.PRIO):
         header += [i.export_key or i.value for i in poll.items]
     else:
         return HttpResponse('Exporting this poll type is not supported', status=503)
@@ -184,11 +187,13 @@ def export_raw(request, poll_id):
                email,
                votes[0].updated_at.strftime("%d.%m.%Y %H:%M")]
         if poll.poll_type == Poll.RADIO:
-            logger.info("%s: %s", user, set([v.item for v in votes]))
+            #logger.info("%s: %s", user, set([v.item for v in votes]))
             assert len(set([v.item for v in votes])) == 1
-            logger.info("%s", votes)
+            #logger.info("%s", votes)
             row += [votes[0].item.export_key or votes[0].item.value]
-        elif poll.poll_type == Poll.YESNONONE:
+        elif poll.poll_type == Poll.TEXT:
+            row += [votes[0].text]
+        elif poll.poll_type in (Poll.YESNONONE, Poll.PRIO):
             d = {v.item: v.text for v in votes}
             assert len(poll.items) == len(votes)
             # logging.info("%s %s %s", user, len(poll.items), len(votes))

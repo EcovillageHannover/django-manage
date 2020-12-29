@@ -74,6 +74,8 @@ def subscribe(request):
 
 
 
+
+
 def subscribe_confirm(request, token):
     try:
         args = parse_token(config.SECRET_KEY, token)
@@ -103,3 +105,80 @@ def subscribe_confirm(request, token):
 
     return render(request, "newsletter/subscribe.html", {})
 
+
+@csrf_exempt
+def unsubscribe(request):
+    context = { }
+    
+    if request.method == 'POST':
+        form = SubscribeForm(request.POST)
+        if form.is_valid():
+            mailman = Mailman()
+
+            newsletters = set(form.cleaned_data['newsletters'])
+            email = form.cleaned_data['mail']
+            subscribed = set([x for x in mailman.get_lists(subscriber=email)])
+            newsletters = newsletters & subscribed
+            mask = newsletter_config.encode(newsletters)
+
+
+
+            token = format_token(config.SECRET_KEY, ['unsubscribe', email, hex(mask)])
+            context =  dict(
+                config=config,
+                token=token.decode(),
+                newsletters=newsletters
+            )
+            msg_plain = render_to_string('newsletter/confirmation-unsubscribe.txt', context)
+            msg_html = render_to_string('newsletter/confirmation-unsubscribe.html', context)
+
+            msg = EmailMultiAlternatives(subject="[EVH] Bestätigung zur Newsletterabmeldung",
+                                 body=msg_plain,
+                                 from_email=config.EMAIL_FROM,
+                                 to=[email],
+                                 reply_to=[config.EMAIL_FROM])
+            msg.attach_alternative(msg_html, "text/html")
+            msg.send()
+
+            messages.add_message(request, messages.SUCCESS,
+                                 mark_safe('Wir haben eine Mail an %s mit einem Bestätigungslink geschickt. <strong>Klicke auf den darin enthaltenen Link!</strong> um die Abmeldung abzuschließen.'%email))
+
+        else:
+            messages.add_message(request, messages.ERROR, 'Invalide Auswahl')
+            context['form'] = SubscribeForm()
+            context['form'].initial['newsletters'] = newsletter_config.all
+    else:
+        context['form'] = SubscribeForm()
+        context['form'].initial['newsletters'] = newsletter_config.all
+
+    return render(request, "newsletter/unsubscribe.html", context)
+
+def unsubscribe_confirm(request, token):
+    try:
+        args = parse_token(config.SECRET_KEY, token)
+        TYPE, email, mask = args
+        if TYPE != 'unsubscribe':
+            raise RuntimeError("Falscher Tokentyp")
+
+        newsletters = newsletter_config.decode(int(mask, 16))
+    except Exception as e:
+        messages.add_message(request, messages.ERROR, f"Invalides Token: {e} ({token})")
+        logger.error(f"Invalid Token: {e} {token}")
+        return render(request, 'newsletter/unsubscribe.html', {})
+
+    
+    mailman = Mailman()
+    for nl in newsletters:
+        rc = 1
+        rc = mailman.unsubscribe(nl, email)
+        if rc == 1:
+            messages.add_message(request, messages.SUCCESS,
+                                 'Eintragung (%s) war erfolgreich'% nl)
+        elif rc == 0:
+            messages.add_message(request, messages.WARNING,
+                                 'Eintragung (%s): Du warst bereits eingetragen' % nl)
+        else:
+            messages.add_message(request, messages.ERROR,
+                                 'Eintragung (%s) fehlgeschlagen: %s' % (nl, rc))
+
+    return render(request, "newsletter/unsubscribe.html", {})

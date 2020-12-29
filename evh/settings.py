@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'taggit',
     'impersonate',
     'macros',
+    'corsheaders',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -62,7 +64,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'impersonate.middleware.ImpersonateMiddleware',
-]
+ 
+ ]
 
 ROOT_URLCONF = 'evh.urls'
 
@@ -223,7 +226,7 @@ IMPERSONATE = {
     'PAGINATE_COUNT': 10,
     'URI_EXCLUSIONS': tuple(),
     'REDIRECT_FIELD_NAME': 'next',
-    'REDIRECT_URL': '/',
+    'REDIRECT_URL': '/account/profile',
 }
 
 CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'")

@@ -115,7 +115,8 @@ def group_changed_hook(sender, **kwargs):
 
     group_nosync = f"{group}" in set(['ag-gastgeber', 'genossenschaft',
                                       'ecotopia-vorstand', 'ecotopia-aufsichtsrat', 'ecotopia-mitglieder'])
-    # group_nosync = True
+    if 'member_sync' not in kwargs:
+        group_nosync = True
 
 
     if mlist_discuss in mlists or mlist_news in mlists:
@@ -126,6 +127,9 @@ def group_changed_hook(sender, **kwargs):
             try:
                 member['user'] = UserModel.objects.get(username=member['username'])
             except UserModel.DoesNotExist:
+                user = LDAPBackend().populate_user(member['username'])
+                member['user'] = user
+                member['user_not_found'] = True
                 pass
         owners = l.group_owners(group)
 

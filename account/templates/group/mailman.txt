@@ -1,7 +1,8 @@
 -- 
 EVH Newsletter: {{group}}
 
-Um diesen Newsletter abzubestellen, senden Sie eine Mail an ${short_listname}-leave@${domain}
+Um sich von diesem oder andere Newsletter der ecovillage hannover e.G.
+abzumelden, gehen Sie auf die Seite: https://account.my-evh.de/newsletter/unsubscribe
 Sollte es dabei Probleme geben, wenden Sie sich an support@my-evh.de
 
 ________________________________________________________________________________

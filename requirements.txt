@@ -7,6 +7,7 @@ django-guardian
 django-markdownify
 django-taggit
 django-impersonate
+django-cors-headers
 django-macros
 django-csp
 psycopg2

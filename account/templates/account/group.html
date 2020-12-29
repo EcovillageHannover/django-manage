@@ -91,7 +91,9 @@ Gruppe: {{group}}
 <p>Über Mailinglisten kannst du Nachrichten an die Mitglieder der Gruppe schicken und die Gruppenmitglieder können untereinander in Austausch treten. Ganz allgemein hat eine <em>Mailingliste</em> eine Addresse und eine Liste an Abonementen. Schreibt jemand eine Mail an die Addresse der Liste, so bekommen alle Abonementen die Nachricht. Für deine Gruppe, sind aktuell folgende Mailinglisten installiert:</p>
 <ul>
   {% if mlist_discuss %}
-  <li><strong><a href="https://list.my-evh.de/hyperkitty/list/{{mlist_discuss.fqdn_listname}}/">{{mlist_discuss.fqdn_listname}}</a></strong> ({{mlist_discuss.member_count}} Abonenten) -- Auf diser Diskussionsliste sind alle Mitglieder der Gruppe automatisch Abonennten. Jedes Mitglied hat hier das Recht eine Mail an alle anderen zu senden. Diese Liste ist zur Disksussion innerhalb der Gruppe gedacht.</li>
+  <li><strong><a href="https://list.my-evh.de/hyperkitty/list/{{mlist_discuss.fqdn_listname}}/">{{mlist_discuss.fqdn_listname}}</a></strong> ({{mlist_discuss.member_count}} Abonenten) -- Auf dieser Diskussionsliste sind alle Mitglieder der Gruppe automatisch
+Abonnenten. Jedes Mitglied hat hier das Recht eine Mail an alle anderen zu
+senden. Diese Liste ist zur Diskussion innerhalb der Gruppe gedacht.</li>
   {% endif %}
   {% if mlist_news %} <li>
     <p><a href="https://list.my-evh.de/hyperkitty/list/{{mlist_news.fqdn_listname}}/message/new"><strong>{{mlist_news.fqdn_listname}}</strong></a>

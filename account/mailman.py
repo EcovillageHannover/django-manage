@@ -50,18 +50,18 @@ class Mailman:
             dmarc_mitigate_action="munge_from",
             max_message_size=1024,
             admin_immed_notify=False,
+            advertised=False,
         )
         config.update(kwargs)
         if type == "discuss":
             config['subscription_policy'] = "confirm"
             config["allow_list_posts"] = True
-            if 'ag-' in mlist.list_name:
-                config['reply_goes_to_list'] = "point_to_list"
-            else:
-                config['reply_goes_to_list'] = "no_munging"
+            #if 'ag-' in mlist.list_name:
+            #    config['reply_goes_to_list'] = "point_to_list"
+            #else:
+            config['reply_goes_to_list'] = "no_munging"
             config['default_member_action'] = "accept"
             config['default_nonmember_action'] = "accept"
-            config['advertised'] = False
 
             
 
@@ -71,7 +71,6 @@ class Mailman:
             config['reply_goes_to_list'] = "no_munging"
             config["default_member_action"] = "hold"
             config["default_nonmember_action"] = "hold"
-            config['advertised'] = True
 
             mlist.set_template('list:member:regular:footer',
                                settings.BASE_URL + reverse('account:group_mailman', args=[group]))
@@ -110,13 +109,14 @@ class Mailman:
                 for m in secondaries:
                     member_should_not_set.add(m.lower())
             else:
-                member_should_set.add(user.email)
+                member_should_set.add(user.email.lower())
 
         for member in members:
             userprofile = None
             if isinstance(member, str):
                 member_should_set.add(member)
             elif isinstance(member, dict):
+                # print(member)
                 if member['user']:
                     process_user(member['user'])
                 else:

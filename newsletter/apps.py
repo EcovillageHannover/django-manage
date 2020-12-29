@@ -11,6 +11,7 @@ class NewsletterConfig(AppConfig):
 
     def form_choices(self):
         for name, label, url in self.newsletters:
+            if name is None: continue
             if url:
                 yield (name, mark_safe(f'<a href="{url}">{label}</a>'))
             else:
@@ -42,10 +43,14 @@ class EVHNewsletterConfig(NewsletterConfig):
 
     initial = ['genossenschaft-news']
 
+    @property
+    def all(self):
+        return [x[0] for x in self.newsletters if x[0]]
+
     newsletters = [
         # mailman-name, label, url
         ('genossenschaft-news', 'Allgemeiner Newsletter der ecovillage hannover e.G.', None),
-        ('dorfrat-kronsberg-news', 'Dorfrat Kronsberg', None),
+        (None, None, None), # ('dorfrat-kronsberg-news', 'Dorfrat Kronsberg', None),
         ('ag-standorte-news', 'A1 - Klärung weiterer längerfristiger Standorte',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/weitere-standorte'),
         ('ag-gemeinschaft-news', 'A2 - Soziales Leben im Ecovillage',

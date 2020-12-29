@@ -4,18 +4,18 @@
 {% load bootstrap4 %}
 {% load markdownify %}
 
-{% block title %} {{ poll_collection.name }}{% endblock %}
+{% block title %}{{ poll_collection.name }}{% endblock %}
 
 {% block content %}
 
   {% if not poll_collection.is_published %}
-    <div class="alert alert-danger">
+    <div class="alert alert-danger hide-in-iframe">
       Die Umfrage ist unsichtbar.
     </div>
   {% endif %}
 
   {% if not poll_collection.is_active %}
-    <div class="alert alert-info">
+    <div class="alert alert-info hide-in-iframe">
       Die Umfrage ist beendet.
     </div>
   {% endif %}
@@ -31,20 +31,16 @@
 
   <div class="w-80">
     {% if can_change %}
-      <a href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
+      <a class="hide-in-iframe" href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
         <span class="float-right btn btn-danger">Bearbeiten</span>
       </a>
       {% endif %}
-
-
-
     {{ poll_collection.description | markdownify  }}
-
   </div>
 
-  <p>
+  <p class="hide-in-iframe">
     <hr/>
-    <form method="GET" action="{% url 'poll:view' poll_collection.pk %}">
+    <form class="hide-in-iframe" method="GET" action="{% url 'poll:view' poll_collection.pk %}">
       <div class="row">
         <div class="col-sm-2">
           <strong>Schlagwörter-Filter:</strong>
@@ -146,7 +142,11 @@
         <div class="col-md-12">
           {% for vote in form.instance.votes %}
           <div class="row border-top mt-4">
-            <div class="col-md-1"><strong>NutzerIn</strong></div>
+            <div class="col-md-1"><strong>NutzerIn</strong>
+              {% if can_export %}
+              <!-- {# ({{vote.user}}) #} -->
+              {% endif %}
+            </div>
             <div class="col-md-11">{{ vote.text | markdownify}}</div>
           </div>
           {% endfor %}

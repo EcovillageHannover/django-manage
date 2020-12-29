@@ -20,7 +20,10 @@ class Command(BaseCommand):
                             help="Update only User")
 
         parser.add_argument("--group", '-g', default=None,
-                            help="Update only Groyp")
+                            help="Update only Group")
+
+        parser.add_argument("--group-members", '-G', default=False,
+                            help="Sync Group Members", action='store_true')
 
     def handle(self, *args, **options):
         users = ldap_users()
@@ -34,12 +37,15 @@ class Command(BaseCommand):
         m = Mailman()
         for group in LDAP().groups():
             if (options['user'] or options['group']) and \
-               (options['group'] != "all" and group != options['group']):
+               (options['group'] != "all" and not group.startswith(options['group'])):
                 continue
             if group.startswith('ag-') and group != 'ag-gastgeber':
                 news = group + "-news"
                 #    m.domain.createlist(news)
                 # print(group)
 
+            kwargs = {}
+            if options['group_members']:
+                kwargs['member_sync'] = True
 
-            group_changed.send(sender=self.__class__, group=group)
+            group_changed.send(sender=self.__class__, group=group, **kwargs)
