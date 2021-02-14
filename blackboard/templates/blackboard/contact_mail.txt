@@ -1,0 +1,34 @@
+Hallo {{receiver.get_full_name}},
+
+Der Nutzer {{sender.get_full_name}} ({{sender}}) hat dir auf deine Anzeige
+
+Name: {{ item.name}}
+URL:  {{config.BASE_URL}}{% url 'blackboard:view' item.pk %}
+
+geantwortet:
+
+==================================================
+
+{{msg}}
+
+==================================================
+
+Wenn du bei diese Nachricht auf antworten klickt, kannst du dem Nutzer
+direkt antworten. Bedenke dabei, dass du ihm dabei deine
+E-Mailaddresse bekannst gibst.
+
+   -- ecovillage hannover - Team Digitales
+_____________________________________________
+
+ecovillage hannover eG
+Sitz: Davenstedter Str. 200, 30455 Hannover
+Registergericht: Hannover, GnR 200048
+
+Vorstandssprecher: Gerd Nord
+Vorstand: Christine Widdel-Abban,
+Elvira Hendricks, Uwe Bartkus
+
+Aufsichtsratsvorsitz: Hans Mönninghoff
+Stellvertretender Aufsichtsratsvorsitz:
+Brigitte Offermann-Hülse
+_____________________________________________

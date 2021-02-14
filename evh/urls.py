@@ -46,6 +46,7 @@ urlpatterns = [
     path('admin/', admin.site.urls, name='admin'),
     path('impersonate/', include('impersonate.urls')),
     path('newsletter/', include('newsletter.urls', namespace="newsletter")),
+    path('blackboard/', include('blackboard.urls', namespace="blackboard")),
 ]
 
 if not settings.DEBUG:

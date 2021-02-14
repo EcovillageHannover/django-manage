@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load bootstrap4  %}
+
+{% load markdownify %}
+
+{% block title %}{{item.name}}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <p class="card-body">
+    <strong>Ersteller:</strong> {{item.owner.get_full_name}} ({{item.owner}})<br/>
+    <strong>Kategorie:</strong> {{item.category}}<br/>
+    <strong>Erstellt:</strong> {{item.created_at}}<br/>
+    <strong>Zuletzt geändert:</strong> {{item.updated_at}}
+    {% if item.owner == request.user %}
+    <br/><strong>Status der Anzeige:</strong>
+    {% if item.is_published %}
+    <span class='badge badge-success'>aktiv</span>
+    {% else %}
+    <span class='badge badge-danger'>inaktiv</span>
+    {% endif %}
+    {% endif %}
+  </p>
+</div>
+<p>
+  <h4>Anzeigentext
+    {% if request.user == item.owner %}
+    <span class="float-right">
+      <a class="badge badge-success" href="{% url 'blackboard:edit' item.id %}">Bearbeiten</a>
+      <a class="badge badge-danger" href="{% url 'blackboard:delete' item.id %}">Löschen</a>
+      {% endif %}
+    </span>
+  </h4>
+  <p><i>Der Ersteller der Anzeige ist verantwortlich für den Inhalt der Anzeige</i></p>
+
+  {{item.description |markdownify}}
+</p>
+
+<h4>Ersteller kontaktieren</h4>
+<p><em>Du kannst dem Ersteller {{item.owner.get_full_name}} eine Nachricht per Mail schicken. Dabei erfährt er <strong>deine E-Mailaddrese</strong> und kann dir so direkt antworten.</em></p>
+    <form action="{% url 'blackboard:mail' item.id %}" method="post">
+    {% csrf_token %}
+    {% bootstrap_form email_form layout='inline' %}
+    <input class="btn btn-success" type="submit" value="Nachricht schicken">
+  </form>
+
+
+{% endblock %}

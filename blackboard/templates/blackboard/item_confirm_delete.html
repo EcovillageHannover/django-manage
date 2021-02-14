@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load bootstrap4 %}
+
+{% block title %}Anzeige löschen: {{item.name}}{% endblock %}
+{% block content %}
+
+<p>Bist du dir sicher, dass du die Anzeige "<strong>>{{item}}</strong>" löschen möchtest?</p>
+
+<form action="" method="POST">
+  {% csrf_token %}
+  <input class="btn btn-danger" type="submit" value="Ja. löschen">
+  <a href="{% url 'blackboard:view' item.pk %}" class="btn btn-success">Nein, zurück!</a>
+</form>
+{% endblock %}
