@@ -84,7 +84,9 @@
         {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
         {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
         {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
-        {% if can_export %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">Datenexport</span></a>{% endif %}
+        {% if can_change %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">
+            {% if can_export %}Export (komplett){% else %}Export (anonym){% endif %}
+        </span></a>{% endif %}
       </span>
     </h3>
     <div class="card-block p-3">

@@ -148,7 +148,6 @@ class Command(BaseCommand):
                 ldap_addgroup(user.username, django_group.name)
                 LDAPBackend().populate_user(user.username)
 
-        return
 
         ################################################################
         # Subscribe to genossenschaft und genossenschaft-news

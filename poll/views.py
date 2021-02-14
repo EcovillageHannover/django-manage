@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .utils import set_cookie
+from zlib import crc32
 import csv
 import logging
 logger = logging.getLogger("poll")
@@ -59,7 +60,7 @@ def poll_collection_view(request, poll_collection_id):
 
     poll_forms = []
     number = 1
-    for p in Poll.objects.filter(poll_collection=pc).order_by('position', 'id'):
+    for p in Poll.objects.filter(poll_collection=pc).order_by('is_published', 'position', 'id'):
         # Number all polls of this Poll Collcetion
         p.number = number
         number += 1
@@ -148,10 +149,10 @@ def export_raw(request, poll_id):
     except Poll.DoesNotExist:
         return HttpResponse('Wrong parameters', status=400)
 
-    if not poll.poll_collection.can_export(request.user):
+
+    if not poll.poll_collection.can_change(request.user):
         return HttpResponse('NotFound', status=404)
-
-
+    can_export = poll.poll_collection.can_export(request.user)
     
     votes = Vote.objects.filter(poll=poll_id)
     response = HttpResponse(
@@ -159,12 +160,17 @@ def export_raw(request, poll_id):
         status=200)
     response['Content-Disposition'] = f'attachment; filename="poll_{poll_id}.csv'
     out = csv.writer(response)
-    header = ["PollID", "EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail", "Abstimmungszeitpunkt"]
+    header = ["PollID", "Frage", "Abstimmungszeitpunkt"]
+    if can_export:
+        header += ["EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail"]
+    else:
+        header += ['PollUserID']
+
     if poll.poll_type == Poll.RADIO:
         header += ["Auswahl"]
     elif poll.poll_type == Poll.TEXT:
         header += ["Text"]
-    elif poll.poll_type in (Poll.YESNONONE, Poll.PRIO):
+    elif poll.poll_type in (Poll.YESNONONE, Poll.PRIO, Poll.CHECKBOX):
         header += [i.export_key or i.value for i in poll.items]
     else:
         return HttpResponse('Exporting this poll type is not supported', status=503)
@@ -181,11 +187,20 @@ def export_raw(request, poll_id):
                 mnr = str(user.userprofile.evh_mitgliedsnummer)
 
         row = [poll_id,
-               mnr,
-               user.first_name,
-               user.last_name,
-               email,
+               poll.question,
                votes[0].updated_at.strftime("%d.%m.%Y %H:%M")]
+        if can_export:
+            row += [
+                mnr,
+                user.first_name,
+                user.last_name,
+                email,
+            ]
+        else:
+            row += [
+                str(abs(crc32(f'{poll_id}.{user.id}'.encode())))
+            ]
+
         if poll.poll_type == Poll.RADIO:
             #logger.info("%s: %s", user, set([v.item for v in votes]))
             assert len(set([v.item for v in votes])) == 1
@@ -193,11 +208,14 @@ def export_raw(request, poll_id):
             row += [votes[0].item.export_key or votes[0].item.value]
         elif poll.poll_type == Poll.TEXT:
             row += [votes[0].text]
+        elif poll.poll_type in (Poll.CHECKBOX, ):
+            items = set([v.item for v in votes])
+            row += [("1" if i in items else "")  for i in poll.items]
         elif poll.poll_type in (Poll.YESNONONE, Poll.PRIO):
             d = {v.item: v.text for v in votes}
-            assert len(poll.items) == len(votes)
-            # logging.info("%s %s %s", user, len(poll.items), len(votes))
-            row += [d[i] for i in poll.items]
+            #logging.info("%s %s %s", user, poll.items, d)
+            # assert len(poll.items) == len(d)
+            row += [d.get(i) for i in poll.items]
         out.writerow(row)
 
 

@@ -28,15 +28,17 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         users = ldap_users()
 
+
         for username, user in users.items():
-            if (options['user'] or options['group']) and \
-               (options['user'] != "all" and username != options['user']):
+            if options['group']: break
+            if options['user'] and not options['user'] in ('all', username):
                 continue
             user_changed.send(sender=self.__class__, username=username)
 
         m = Mailman()
         for group in LDAP().groups():
-            if (options['user'] or options['group']) and \
+            if options['user']: break 
+            if options['group'] and \
                (options['group'] != "all" and not group.startswith(options['group'])):
                 continue
             if group.startswith('ag-') and group != 'ag-gastgeber':

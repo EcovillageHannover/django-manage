@@ -1,0 +1,34 @@
+{% extends "base-plain.html" %}
+
+{% load bootstrap4 %}
+{% load markdownify %}
+
+{% block title %}Newsletter{% endblock %}
+
+{% block content %}
+{% if form %}
+
+<h2>Ecovillage Newsletter: Abmeldung</h2>
+
+<p>
+  <strong>Achtung!</strong> Hier kannst du unseren unregelmäßigen
+  Newsletter abonnieren. Wenn du in einer AG mitarbeiten möchtest, gib
+  auch diese an. Mehrfachauswahl möglich und gewünscht ;)
+  </p>
+
+<p>Anschließend erhältst Du eine Bestätigungs-E-Mail an die von Dir
+angegebene E-Mail-Adresse. Dort musst du den Bestätigungslink
+  klicken.</p>
+
+<form method="POST" action="{% url 'newsletter:subscribe'%}">
+  {% csrf_token %}
+  {% bootstrap_form form layout='inline' %}
+  {% bootstrap_button "Eintragen" button_type="submit" button_class="btn-info" %}
+</form>
+
+<p><br/>Um dich von diesen Newslettern wieder zu entfernen, klicke <a href="{% url 'newsletter:unsubscribe' %}">hier.</a></p>
+
+{% endif %}
+
+
+{% endblock %}

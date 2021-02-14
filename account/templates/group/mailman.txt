@@ -1,4 +1,23 @@
--- 
+--
+{% if ecotopia %}
+Ecotopia Mailingliste: {{group}}
+________________________________________________________________________________
+
+W| www.ecotopia-hannover.de
+________________________________________________________________________________
+
+ecotopia hannover eG iGr
+Sitz: Davenstedter Str. 200, 30455 Hannover
+Registergericht: Hannover, in Bearbeitung
+
+Vorstandssprecher: Kirein Frank
+Vorstand: Daria Kistner-Drobiner, Kolja Ehmling
+
+Aufsichtsratsvorsitz: Stefan Blahak
+Stellv. Aufsichtsratsvorsitz: Zeynep Parlak
+
+________________________________________________________________________________
+{% else %}
 EVH Newsletter: {{group}}
 
 Um sich von diesem oder andere Newsletter der ecovillage hannover e.G.
@@ -19,4 +38,5 @@ Vorstand: Ingo Bartens, Christine Widdel-Abban, Elvira Hendricks, Uwe Bartkus
 
 Aufsichtsratsvorsitz: Hans Mönninghoff
 Stellvertretender Aufsichtsratsvorsitz: Brigitte Offermann-Hülse
-________________________________________________________________________________
+________________________________________________________________________________,
+{% endif %}

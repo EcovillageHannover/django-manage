@@ -61,7 +61,7 @@ class Mailman:
             #else:
             config['reply_goes_to_list'] = "no_munging"
             config['default_member_action'] = "accept"
-            config['default_nonmember_action'] = "accept"
+            config['default_nonmember_action'] = "hold"
 
             
 
@@ -86,6 +86,8 @@ class Mailman:
         
         # Write some settings
         save = False
+        #for k, v in mlist.settings.items():
+        #    print(k, v)
         for k, v in config.items():
             if k in mlist.settings and mlist.settings[k] != v:
                 logger.info(f"Set option {k} on list {mlist} to {v}")
@@ -149,8 +151,9 @@ class Mailman:
                 is_set.remove(element)
 
             # If we do not sync strict, we are fine here
-            #for x in is_set - should_set:
-            #    print(x)
+            for x in is_set - should_set:
+                print(x)
+
             if not strict: return
 
             for element in is_set - should_set:
@@ -179,6 +182,7 @@ class Mailman:
                      remove=lambda mail: mlist.remove_moderator(mail))
 
         for mod in mlist.moderators:
+            print("Moderator", mod, mod.moderation_action)
             if mod.moderation_action != 'accept':
                 mod.moderation_action = 'accept'
                 logger.info(f"{mod}: set moderation action to {mod.moderation_action}")

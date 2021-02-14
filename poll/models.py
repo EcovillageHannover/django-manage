@@ -146,7 +146,10 @@ class Poll(models.Model):
             else:
                 if self.is_prio:
                     votes = Vote.objects.filter(item=item)
-                    avg =  sum(int(v.text) for v in votes) / float(votes.count())
+                    if len(votes):
+                        avg =  sum(int(v.text) for v in votes) / float(votes.count())
+                    else:
+                        avg = 0.0
                     ret += [(item, "%.1f"%avg, int(avg/5.0*100))]
                 elif self.is_yes_no_none:
                     votes = Vote.objects.filter(item=item)

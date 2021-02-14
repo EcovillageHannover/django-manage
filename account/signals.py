@@ -42,14 +42,15 @@ def user_changed_hook(sender, **kwargs):
                      'wettbewerb-externe',
                      'amsel-kollektiv',
                      'vorstand',
-                     'mitarbeiterinnen']):
+                     'mitarbeiterinnen',
+                     'praktikantinnen']):
         if not os.path.exists(directory):
             os.mkdir(directory)
 
         index_php_content = KIRBY_TEMPLATE.format(
             fullname=user.get_full_name(),
             username=user.username,
-            email=user.email
+            email=user.email,
         )
         if not index_php.exists() or open(index_php).read() != index_php_content:
             with open(index_php, "w+") as fd:
@@ -142,6 +143,7 @@ def group_changed_hook(sender, **kwargs):
                            )
             start = time.time()
             if not group_nosync:
+                logger.warning("Syncing members for group: %s", mlist)
                 m3.sync_list(mlist, members=members, owners=owners, strict=True)
             else:
                 logger.warning("Not syncing members for group: %s", mlist)
@@ -159,8 +161,14 @@ def group_changed_hook(sender, **kwargs):
                            subject_prefix=f"[{prefix}] ",
                            )
             start = time.time()
+            if  str(group).startswith('kronsberg-h'):
+                strict=True
+            else:
+                strict=False
+
             if not group_nosync:
-                m3.sync_list(mlist, members=members, owners=owners, strict=False)
+                logger.warning("Syncing members for group: %s", mlist)
+                m3.sync_list(mlist, members=members, owners=owners, strict=strict)
             else:
                 logger.warning("Not syncing members for group: %s", mlist)
             end = time.time()

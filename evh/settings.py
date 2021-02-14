@@ -229,8 +229,11 @@ IMPERSONATE = {
     'REDIRECT_URL': '/account/profile',
 }
 
-CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'")
+CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'", "*.my-evh.de", "ecovillage-hannover.de", "*.ecovillage-hannover.de")
 CSP_FRAME_ANCESTORS = ("'self'", "*.my-evh.de", "ecovillage-hannover.de", "*.ecovillage-hannover.de")
+CSP_FRAME_SRC = ("'self'", "*.my-evh.de", "ecovillage-hannover.de", "*.ecovillage-hannover.de")
+
+X_FRAME_OPTIONS = 'ALLOW-FROM https://www.ecovillage-hannover.de/'
 
 
 from .settings_local import *

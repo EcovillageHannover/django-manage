@@ -393,6 +393,27 @@ def group(request, group):
         'mlist_news': mlists.get(f"{group}-news"),
     })
 
+@login_required
+def group_view(request, group):
+    if group != 'genossenschaft':
+        return HttpResponse('Permission denied', status=403)
+
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+
+
+    if len(set(request.user.groups.values_list('name',flat=True))\
+           & set(['dorfrat-kronsberg-koordination', 'evh-admin'])) == 0:
+        return HttpResponse('Permission denied', status=403)
+
+    return render(request, 'account/group_view.html', {
+        'group': group,
+        'members': LDAP().group_members(group)
+    })
+
+
+
 
 @login_required
 def group_member_add(request, group):
@@ -538,6 +559,7 @@ def group_mailman(request, group):
 
 
     return render(request, 'group/mailman.txt',
-                  dict(group=groups[0]),
+                  dict(group=groups[0],
+                       ecotopia=('ecotopia' in str(groups[0]))),
                   content_type='text/plain; charset=utf8'
                   )
