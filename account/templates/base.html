@@ -3,7 +3,7 @@
 {% load bootstrap4 %}
 
 {% block bootstrap4_content %}
-
+{% if not print_mode %}
 <nav id='navigationBarTop' class="hide-in-iframe navbar navbar-expand-lg navbar-light bg-light">
   <a class="navbar-brand" href="/">EVH Account</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,6 +49,7 @@
   <a class="btn btn-primary" href="{% url 'account:login'%}">Login</a>
   {% endif %}
 </nav>
+{% endif %}{# Print_mode #}
 
 
 <!--
@@ -71,7 +72,9 @@
  <div class="container">
    <h1>{% block title %}(no title){% endblock %}</h1>
    
-   {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
+   {% autoescape off %}
+   {% bootstrap_javascript jquery=True %}
+   {% bootstrap_messages %}{% endautoescape %}
 
    {% block content %}(no content){% endblock %}
  </div>

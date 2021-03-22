@@ -45,6 +45,8 @@ def poll_collection_view(request, poll_collection_id):
     search_q = request.GET.get('q','')
     search_tag = request.GET.get('tag','')
     search_p = request.GET.get('p','')
+    last_voted = int(request.GET.get('last_voted','-1'))
+
     
     terms = [x.strip() for x in search_q.split()]
 
@@ -102,7 +104,9 @@ def poll_collection_view(request, poll_collection_id):
         'search_q':    search_q,
         'search_p':    search_p,
         'search_tag':  search_tag,
+        'last_voted': last_voted,
         'available_tags': tags,
+        'print_mode':  request.GET.get('print_mode'),
         'can_view':    pc.can_view(request.user),
         'can_vote':    pc.can_vote(request.user),
         'can_analyze': pc.can_analyze(request.user),
@@ -137,7 +141,11 @@ def vote(request, poll_id):
                                  f"Deine Stimme für '{poll}' wurde gespeichert.")
 
             return HttpResponseRedirect(request.POST['next'])
-
+        else:
+            logging.info("%s", form.errors)
+            messages.add_message(request, messages.ERROR,
+                                 f"Deine Wahl konnte nicht gespeichert werden!")
+            return HttpResponseRedirect(request.POST['next'])
 
     return HttpResponse(status=400)
 

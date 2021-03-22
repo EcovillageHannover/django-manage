@@ -7,7 +7,7 @@
 {% block title %}{{ poll_collection.name }}{% endblock %}
 
 {% block content %}
-
+  {% if not print_mode %}
   {% if not poll_collection.is_published %}
     <div class="alert alert-danger hide-in-iframe">
       Die Umfrage ist unsichtbar.
@@ -28,16 +28,18 @@
     td { padding: 3px;}
 
   </style>
+  {% endif %}
 
   <div class="w-80">
-    {% if can_change %}
+    {% if can_change and not print_mode %}
       <a class="hide-in-iframe" href="{% url 'admin:poll_pollcollection_change' poll_collection.id %}">
         <span class="float-right btn btn-danger">Bearbeiten</span>
       </a>
-      {% endif %}
+    {% endif %}
     {{ poll_collection.description | markdownify  }}
   </div>
 
+  {% if not print_mode %}
   <p class="hide-in-iframe">
     <hr/>
     <form class="hide-in-iframe" method="GET" action="{% url 'poll:view' poll_collection.pk %}">
@@ -71,27 +73,34 @@
     </form>
 </span>
 </p>
+{% endif %}
 
 {% if not poll_forms %}
   <p><em>Keine Fragen für die gegebenen Kriterien gefunden.</em></p>
 {% endif %}
 
 {% for form in poll_forms %}
-  <div class="card card-light-bg mb-3">
+  <div class="card card-light-bg mb-3" style="break-inside: avoid;">
     <h3 id="poll{{form.instance.id}}" class="card-header">
-      {{form.instance.number}}. {{form.instance.question}} <a href="#poll{{form.instance.id}}">&#x1F517;</a>
-      <span class="float-right">
-        {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
-        {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
-        {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
-        {% if can_change or can_export %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">
+      {{form.instance.number}}. {{form.instance.question}}
+      {% if not print_mode %}
+        <a href="#poll{{form.instance.id}}">&#x1F517;</a>
+        <span class="float-right">
+          {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
+          {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
+          {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
+          {% if can_change or can_export %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">
             {% if can_export %}Export (komplett){% else %}Export (anonym){% endif %}
-        </span></a>{% endif %}
-      </span>
+          </span></a>{% endif %}
+        </span>
+        {% endif %}
     </h3>
     <div class="card-block p-3">
       <div class="row mb-3">
-        <div class="col-md-12">{{form.instance.description | markdownify }}</div>
+        <div class="col-md-12">
+          {{form.instance.description | markdownify }}
+          {% if last_voted == form.instance.id %}{% bootstrap_messages %}{% endif %}
+        </div>
         {% if form.instance.tags.names %}
           <div class="col-md-8">
             <strong>Schlagworte: </strong>
@@ -105,13 +114,13 @@
           <form method="POST" action="{% url 'poll:vote' form.instance.pk %}">
             {% csrf_token %}
             {% bootstrap_form form layout='inline' %}
-            {% if can_vote and poll_collection.is_active and form.instance.is_published %}
+            {% if can_vote and poll_collection.is_active and form.instance.is_published  and not print_mode %}
               {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-info" %}
             {% endif %}
-            <input type="hidden" name="next" value="{{ next }}?tag={{search_tag}}&q={{search_q}}#poll{{form.instance.id}}" />
+            <input type="hidden" name="next" value="{{ next }}?last_voted={{form.instance.id}}&tag={{search_tag}}&q={{search_q}}#poll{{form.instance.id}}" />
           </form>
         </div>
-        {% if form.show_results %}
+        {% if form.show_results and not print_mode%}
         <div class="col-md-5 poll-result">
           {% if not form.instance.is_text %}
           <ul>

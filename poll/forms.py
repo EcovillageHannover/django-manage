@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import Poll, Item, Vote, PollCollection
 from  django.utils.html import mark_safe
 
@@ -17,8 +18,6 @@ class DisableRadioSelect(forms.RadioSelect):
 
     def create_option(self, *args, **kwargs):
         option = super(DisableRadioSelect, self).create_option(*args, **kwargs)
-        logger.info("%s", option)
-
         if option.get('value') in self.disabled_choices:
             option['attrs']['disabled'] = True
             option['attrs']['class'] += ' disabled'
@@ -84,12 +83,6 @@ class PollForm(forms.ModelForm):
                 # Select Choices
                 self.choices.append(choice)
 
-
-
-
-
-            logger.info("Disabled Choices: %s", disabled_choices)
-
             if self.instance.poll_type == Poll.RADIO:
                 self.fields['choice'] = forms.ChoiceField(
                     choices=self.choices,
@@ -101,7 +94,8 @@ class PollForm(forms.ModelForm):
             else:
                 self.fields['choices'] = forms.MultipleChoiceField(
                     choices=self.choices,
-                    widget=forms.CheckboxSelectMultiple
+                    widget=forms.CheckboxSelectMultiple,
+                    required=False
                 )
                 self.initial['choices'] = [v.item.pk for v in self.votes]
 
@@ -124,6 +118,11 @@ class PollForm(forms.ModelForm):
     def clean_choices(self):
         data = self.cleaned_data['choices']
         ret = [Item.objects.get(pk=x) for x in data]
+        if self.instance.max_votes >= 0:
+            if self.instance.max_votes < len(ret):
+                msg = "Es können maximal %d Optionen gewählt werden" % self.instance.max_votes
+                self.add_error('choices', msg)
+                logging.error(msg)
         return ret
 
     def save(self, user):
