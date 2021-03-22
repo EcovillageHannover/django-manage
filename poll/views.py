@@ -149,11 +149,12 @@ def export_raw(request, poll_id):
     except Poll.DoesNotExist:
         return HttpResponse('Wrong parameters', status=400)
 
-
-    if not poll.poll_collection.can_change(request.user):
-        return HttpResponse('NotFound', status=404)
     can_export = poll.poll_collection.can_export(request.user)
-    
+    can_change = poll.poll_collection.can_change(request.user)
+
+    if not (can_change or can_export):
+        return HttpResponse('NotFound', status=404)
+
     votes = Vote.objects.filter(poll=poll_id)
     response = HttpResponse(
         content_type="text/csv",
@@ -198,7 +199,7 @@ def export_raw(request, poll_id):
             ]
         else:
             row += [
-                str(abs(crc32(f'{poll_id}.{user.id}'.encode())))
+                str(abs(crc32(f'{poll.poll_collection.id}.{user.id}'.encode())))
             ]
 
         if poll.poll_type == Poll.RADIO:

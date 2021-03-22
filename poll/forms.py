@@ -123,7 +123,8 @@ class PollForm(forms.ModelForm):
 
     def clean_choices(self):
         data = self.cleaned_data['choices']
-        return [Item.objects.get(pk=x) for x in data]
+        ret = [Item.objects.get(pk=x) for x in data]
+        return ret
 
     def save(self, user):
         old_votes = Vote.objects.filter(user=user, poll=self.instance)

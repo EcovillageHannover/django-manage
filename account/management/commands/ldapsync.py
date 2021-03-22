@@ -29,11 +29,10 @@ class Command(BaseCommand):
         users = ldap_users()
 
 
-        for username, user in users.items():
-            if options['group']: break
-            if options['user'] and not options['user'] in ('all', username):
-                continue
-            user_changed.send(sender=self.__class__, username=username)
+        if options['user']:
+            for username, user in users.items():
+                if options['user'] in ('all', username):
+                    user_changed.send(sender=self.__class__, username=username)
 
         m = Mailman()
         for group in LDAP().groups():

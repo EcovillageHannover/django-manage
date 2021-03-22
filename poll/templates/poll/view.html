@@ -84,7 +84,7 @@
         {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
         {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
         {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
-        {% if can_change %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">
+        {% if can_change or can_export %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">
             {% if can_export %}Export (komplett){% else %}Export (anonym){% endif %}
         </span></a>{% endif %}
       </span>
@@ -144,10 +144,12 @@
         <div class="col-md-12">
           {% for vote in form.instance.votes %}
           <div class="row border-top mt-4">
-            <div class="col-md-1"><strong>NutzerIn</strong>
+            <div class="col-md-1"><strong>
               {% if can_export %}
-              <!-- {# ({{vote.user}}) #} -->
-              {% endif %}
+              {{vote.user}}
+              {% else %}
+              NutzerIn
+              {% endif %}</strong>
             </div>
             <div class="col-md-11">{{ vote.text | markdownify}}</div>
           </div>

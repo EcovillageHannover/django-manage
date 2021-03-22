@@ -49,7 +49,7 @@ class Mailman:
             preferred_language="de",
             dmarc_mitigate_action="munge_from",
             max_message_size=1024,
-            admin_immed_notify=False,
+            admin_immed_notify=True,
             advertised=False,
         )
         config.update(kwargs)
@@ -62,8 +62,12 @@ class Mailman:
             config['reply_goes_to_list'] = "no_munging"
             config['default_member_action'] = "accept"
             config['default_nonmember_action'] = "hold"
-
-            
+            config['accept_these_nonmembers'] = sorted(list([
+                "^.*@ecovillage-hannover.de",
+                "^.*@ecotopia-hannover.de",
+                "^.*@my-evh.de",
+                "^.*@amsel-kollektiv.de",
+            ]))
 
         elif type == "news":
             config['subscription_policy'] = "open"
@@ -71,6 +75,7 @@ class Mailman:
             config['reply_goes_to_list'] = "no_munging"
             config["default_member_action"] = "hold"
             config["default_nonmember_action"] = "hold"
+
 
             mlist.set_template('list:member:regular:footer',
                                settings.BASE_URL + reverse('account:group_mailman', args=[group]))
@@ -80,8 +85,17 @@ class Mailman:
                                'ecotopia-vorstand', 'ecotopia-aufsichtsrat'):
             config['archive_policy'] = 'never'
 
+        if mlist.list_name in ('ag-wohngruppen-news'):
+            config['archive_policy'] = 'public'
+
+        if mlist.list_name in ('kronsberg-wohnvergabe',):
+            config["default_nonmember_action"] = "accept"
+
+
         #for k,v in mlist.settings.items():
         #    logger.info(f"{k}: {v}")
+ 
+
 
         
         # Write some settings
@@ -89,7 +103,7 @@ class Mailman:
         #for k, v in mlist.settings.items():
         #    print(k, v)
         for k, v in config.items():
-            if k in mlist.settings and mlist.settings[k] != v:
+            if  mlist.settings[k] != v:
                 logger.info(f"Set option {k} on list {mlist} to {v}")
                 mlist.settings[k] = v
                 save = True
@@ -188,14 +202,16 @@ class Mailman:
                 logger.info(f"{mod}: set moderation action to {mod.moderation_action}")
                 mod.save()
 
-
         site_admins = set(['dennis.klose@my-evh.de', 'christian.dietrich@my-evh.de'])
+        site_admins = set([])
         m3_owner_mails = set([m.address.email for m in mlist.owners])
         sync_tag('owner',
                  should_set=site_admins,
                  is_set=m3_owner_mails,
                  add=lambda mail: mlist.add_owner(mail),
                  remove=lambda mail: mlist.remove_owner(mail))
+
+        
 
     def subscribe(self, mlist, subscriber):
         ################################################################

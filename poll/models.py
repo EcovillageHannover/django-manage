@@ -109,6 +109,8 @@ class Poll(models.Model):
 
     position = models.SmallIntegerField(default=1)
 
+    max_votes = models.SmallIntegerField(default=-1,blank=True,null=True)
+
     class Meta:
         verbose_name = "Frage"
         verbose_name_plural = "Fragen"
