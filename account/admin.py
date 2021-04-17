@@ -21,6 +21,7 @@ class GroupProfileInline(admin.StackedInline):
     model = GroupProfile
     can_delete = False
     verbose_name_plural = 'Profil'
+    fk_name = 'group'
 
 class NewGroupAdmin(GroupAdmin):
     inlines = (GroupProfileInline, )

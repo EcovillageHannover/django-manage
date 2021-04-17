@@ -27,7 +27,8 @@ def index(request):
         top_level = item.category.title.split(">",1)[:-1]
         top_level = [x.strip() for x in top_level]
         items[" » ".join(top_level)].append(item)
-    context = {'items': list(sorted(items.items()))}
+    context = {'items': list(sorted(items.items())),
+               'foobar': 23}
     return render(request, "blackboard/list.html", context)
 
 @login_required

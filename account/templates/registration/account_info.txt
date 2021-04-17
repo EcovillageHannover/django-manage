@@ -19,8 +19,8 @@ wir bereits eine kleine Anleitung erstellt haben:
   Anleitung:  https://account.my-evh.de/static/matrix-anleitung.pdf
   Chat:       https://chat.my-evh.de
 
--- EVH Support
-
+-- 
+EVH Support
 _____________________________________________
 
 ecovillage hannover eG
@@ -28,8 +28,8 @@ Sitz: Davenstedter Str. 200, 30455 Hannover
 Registergericht: Hannover, GnR 200048
 
 Vorstandssprecher: Gerd Nord
-Vorstand: Christine Widdel-Abban,
-Elvira Hendricks, Uwe Bartkus
+Vorstand: Ingo Bartens, Elvira Hendricks,
+Uwe Bartkus, Christine Widdel-Abban
 
 Aufsichtsratsvorsitz: Hans Mönninghoff
 Stellvertretender Aufsichtsratsvorsitz:

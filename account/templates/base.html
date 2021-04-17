@@ -18,6 +18,9 @@
   </div>
   {% if user.is_staff %}
   <div class="navbar-nav">
+    <form class="form-inline" method="get" action="/admin/auth/group/">
+      <input type="text" class="form-control" id="q" name="q" placeholder="Gruppe suchen">
+    </form>
     <form class="form-inline" method="get" action="/admin/auth/user/">
       <input type="text" class="form-control" id="q" name="q" placeholder="Nutzer suchen">
     </form>
@@ -72,9 +75,7 @@
  <div class="container">
    <h1>{% block title %}(no title){% endblock %}</h1>
    
-   {% autoescape off %}
-   {% bootstrap_javascript jquery=True %}
-   {% bootstrap_messages %}{% endautoescape %}
+   {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
 
    {% block content %}(no content){% endblock %}
  </div>

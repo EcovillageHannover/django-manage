@@ -32,16 +32,19 @@ class PasswordResetForm(DjangoPasswordResetForm):
         resetting their password.
         """
         email_field_name = UserModel.get_email_field_name()
+        sent = set()
         for user in UserModel._default_manager.filter(**{
                 '%s__iexact' % email_field_name: email,
                 'is_active': True,
             }):
+            sent.add(user)
             yield user, getattr(user, email_field_name)
 
         for user in UserModel._default_manager.filter(
                 userprofile__recovery_mail__iexact=email,
                 is_active=True,
                 ):
+            if user in sent: continue
             yield user, user.userprofile.recovery_mail
 
     def clean_email(self):

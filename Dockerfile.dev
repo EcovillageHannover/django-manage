@@ -1,6 +1,6 @@
 FROM python:3
 
-RUN apt-get update && apt-get install -y libldap2-dev libsasl2-dev openssh-server
+RUN apt-get update && apt-get install -y libldap2-dev libsasl2-dev openssh-server git tmux
 
 WORKDIR /usr/src/app
 

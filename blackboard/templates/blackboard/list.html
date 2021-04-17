@@ -3,6 +3,8 @@
 {% block title %}Anzeigen{% endblock %}
 {% block content %}
 
+ABC: {{ foobar }}
+
 <p><em>Hier haben wir die Möglichkeit geschaffen, dass die Mitglieder
 des EVH Prozesses (Klein-)anzeigen zu schalten. Jeder Mensch mit einem
     EVH Account  kann auf die Anzeigen antworten.</em><p>
@@ -24,7 +26,7 @@ des EVH Prozesses (Klein-)anzeigen zu schalten. Jeder Mensch mit einem
 {% for item in group_items %}
  {% if item.owner == request.user or item.is_published %}
 <tr {% if item.owner == request.user %}class="table-success"{% endif %}>
-  <td>{{item.id}}</td>
+  <td>{{item.id }}</td>
   <td><a href="{% url 'blackboard:view' item.id %}">
       {% if not item.is_published %}<span class="badge badge-warning">Inaktiv</span>{% endif %}
       {{item.name}}

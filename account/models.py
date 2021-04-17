@@ -63,6 +63,32 @@ class GroupProfile(models.Model):
     mailinglist_intern = models.BooleanField(default=False)
     mailinglist_announce = models.BooleanField(default=False)
 
+    editable = models.BooleanField(default=True)
+    parent   = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True, default=None,
+                                 related_name="children")
+
+    def parents(self):
+        """Get all parent groups of this group"""
+        ret = []
+        ptr = self
+        while ptr.parent:
+            if ptr.parent in ret: break # Cycle! This should not happen
+            ret.append(ptr.parent)
+            ptr = ptr.parent.groupprofile
+        return ret
+
+    def all_children(self):
+        """Get (recursively) all children groups."""
+        ret = set()
+        stack = [self.group]
+        while stack:
+            ptr = stack.pop()
+            for x in ptr.children.all():
+                if x not in ret:
+                    ret.add(x.group)
+                    stack.append(x.group)
+        return ret
+
 
 def make_username(vorname, nachname):
     a = vorname.split(" ")[0]

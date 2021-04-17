@@ -3,6 +3,7 @@
 import django.dispatch
 from django_auth_ldap.backend import LDAPBackend
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.conf import settings
 from pathlib import Path
 from .mailman import Mailman
@@ -103,27 +104,31 @@ def group_member_add_hook(sender, **kwargs):
 group_changed = django.dispatch.Signal(providing_args=["group"])
 @django.dispatch.receiver(group_changed)
 def group_changed_hook(sender, **kwargs):
-    group = kwargs['group']
+    UserModel = get_user_model()
+    group = Group.objects.get(name=kwargs['group'])
     logger.info("Group Changed Hook: %s", group)
+
+    assert group.groupprofile is not None
+    print(group.groupprofile.all_children())
 
     m3 = Mailman()
     mlists = m3.get_lists()
-    mlist_discuss = f"{group}"
-    mlist_news = f"{group}-news"
+    mlist_discuss = f"{group.name}"
+    mlist_news = f"{group.name}-news"
 
     group_name = str(group).title().replace("Ag-", "AG-").replace('Wg-', 'WG-').replace("Evh", "EVH")
     group_name = group_name.replace('laeufe', 'läufe')
 
-    group_nosync = f"{group}" in set(['ag-gastgeber', 'genossenschaft',
+    group_nosync = f"{group.name}" in set(['ag-gastgeber', 'genossenschaft',
                                       'ecotopia-vorstand', 'ecotopia-aufsichtsrat', 'ecotopia-mitglieder'])
     if 'member_sync' not in kwargs:
         group_nosync = True
 
 
+    # If the Mailinglist exists, we sync it.
     if mlist_discuss in mlists or mlist_news in mlists:
         l = LDAP()
         members = l.group_members(group)
-        UserModel = get_user_model()
         for member in members:
             try:
                 member['user'] = UserModel.objects.get(username=member['username'])
@@ -132,7 +137,7 @@ def group_changed_hook(sender, **kwargs):
                 member['user'] = user
                 member['user_not_found'] = True
                 pass
-        owners = l.group_owners(group)
+        owners = l.group_owners(group.name)
 
         if mlist_discuss in mlists:
             mlist = mlists[mlist_discuss]
