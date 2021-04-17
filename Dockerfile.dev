@@ -1,0 +1,22 @@
+FROM python:3
+
+RUN apt-get update && apt-get install -y libldap2-dev libsasl2-dev openssh-server
+
+WORKDIR /usr/src/app
+
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+VOLUME /usr/src/app
+
+
+EXPOSE 8000
+
+RUN echo "**** setup openssh environment ****" && \
+        sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config && \
+        mkdir -p /run/sshd && \
+        useradd -rm -d /usr/src/app -s /bin/bash -u 1000 django
+
+EXPOSE 8022
+USER root
+CMD [ "/usr/sbin/sshd", "-D", "-p", "8022"]
