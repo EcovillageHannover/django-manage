@@ -51,6 +51,8 @@ class Mailman:
             max_message_size=1024,
             admin_immed_notify=True,
             advertised=False,
+            # Mails can be sent via Bcc
+            require_explicit_destination=False,
         )
         config.update(kwargs)
         if type == "discuss":
@@ -66,6 +68,7 @@ class Mailman:
                 "^.*@ecovillage-hannover.de",
                 "^.*@ecotopia-hannover.de",
                 "^.*@my-evh.de",
+                "^.*@postfach.my-evh.de",
                 "^.*@amsel-kollektiv.de",
             ]))
 
@@ -84,6 +87,7 @@ class Mailman:
         if mlist.list_name in ('vorstand', 'aufsichtsrat',
                                'ecotopia-vorstand', 'ecotopia-aufsichtsrat'):
             config['archive_policy'] = 'never'
+            config['max_message_size'] = 1024 * 10
 
         if mlist.list_name in ('ag-wohngruppen-news'):
             config['archive_policy'] = 'public'
@@ -96,8 +100,6 @@ class Mailman:
         #    logger.info(f"{k}: {v}")
  
 
-
-        
         # Write some settings
         save = False
         #for k, v in mlist.settings.items():

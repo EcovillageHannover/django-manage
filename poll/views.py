@@ -100,6 +100,7 @@ def poll_collection_view(request, poll_collection_id):
     tags = list(sorted(available_tags)) + ["Unbeantwortet"]
     context = {
         'poll_collection': pc,
+        'voting_users': len(Vote.objects.filter(poll__poll_collection__id=24).distinct('user')),
         'poll_forms': poll_forms,
         'search_q':    search_q,
         'search_p':    search_p,

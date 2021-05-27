@@ -108,8 +108,8 @@ def group_changed_hook(sender, **kwargs):
     group = Group.objects.get(name=kwargs['group'])
     logger.info("Group Changed Hook: %s", group)
 
-    assert group.groupprofile is not None
-    print(group.groupprofile.all_children())
+    #assert group.groupprofile is not None
+    #print(group.groupprofile.all_children())
 
     m3 = Mailman()
     mlists = m3.get_lists()

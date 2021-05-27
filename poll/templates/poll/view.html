@@ -36,7 +36,8 @@
         <span class="float-right btn btn-danger">Bearbeiten</span>
       </a>
     {% endif %}
-    {{ poll_collection.description | markdownify  }}
+      {{ poll_collection.description | markdownify  }}
+    <strong>Insgesamt haben {{voting_users}} NutzerInnen an mindestens eine Frage beantwortet.</strong>
   </div>
 
   {% if not print_mode %}

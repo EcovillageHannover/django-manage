@@ -13,7 +13,7 @@ class NewsletterConfig(AppConfig):
         for name, label, url in self.newsletters:
             if name is None: continue
             if url:
-                yield (name, mark_safe(f'<a href="{url}">{label}</a>'))
+                yield (name, mark_safe(f'<a href="{url}" target="_blank">{label}</a>'))
             else:
                 yield (name, label)
 
@@ -57,6 +57,8 @@ class EVHNewsletterConfig(NewsletterConfig):
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/soziales-leben'),
         ('ag-forschung-news', 'A4 - Begleitforschung',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/begleitforschung'),
+        ('ag-inklusion-news', 'A7 - Inklusion und Barrierefreiheit',
+         'https://www.ecovillage-hannover.de/mitmachen/themengruppen/inklusion'),
         ('ag-stadtplanung-news', 'K2 - Erarbeitung Quartiersflächenplan',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/quartiersflaechenplanung'),
         ('ag-wohngruppen-news', 'K3 - Zusammenfinden von Wohngruppen und Baugemeinschaften',
@@ -75,6 +77,6 @@ class EVHNewsletterConfig(NewsletterConfig):
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/modulhaeuser'),
         ('ag-stoffkreislaeufe-news', 'K10 - Stoffkreisläufe',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/stoffkreislaeufe'),
-        ('team-digitales-news', 'Team Digitales',
+        ('team-digitales-news', 'AG Digitales',
          'https://www.ecovillage-hannover.de/mitmachen/themengruppen/digitales'),
     ]
