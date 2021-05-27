@@ -47,7 +47,6 @@ def poll_collection_view(request, poll_collection_id):
     search_p = request.GET.get('p','')
     last_voted = int(request.GET.get('last_voted','-1'))
 
-    
     terms = [x.strip() for x in search_q.split()]
 
     # Tag Autodetection
@@ -100,7 +99,7 @@ def poll_collection_view(request, poll_collection_id):
     tags = list(sorted(available_tags)) + ["Unbeantwortet"]
     context = {
         'poll_collection': pc,
-        'voting_users': len(Vote.objects.filter(poll__poll_collection__id=24).distinct('user')),
+        'voting_users': len(Vote.objects.filter(poll__poll_collection__id=pc.id).distinct('user')),
         'poll_forms': poll_forms,
         'search_q':    search_q,
         'search_p':    search_p,
@@ -228,6 +227,48 @@ def export_raw(request, poll_id):
             row += [d.get(i) for i in poll.items]
         out.writerow(row)
 
+
+    return response
+
+@login_required
+def export_voters(request, poll_collection_id):
+    try:
+        pc = PollCollection.objects.get(pk=poll_collection_id)
+    except:
+        return HttpResponse('Wrong parameters', status=400)
+
+    if not pc.can_export(request.user):
+        return HttpResponse('NotFound', status=404)
+
+
+    response = HttpResponse(
+        content_type="text/html",
+        status=200)
+    response['Content-Disposition'] = f'attachment; filename="poll_collection_{poll_collection_id}.csv'
+    out = csv.writer(response)
+
+    header = ["EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail"]
+    out.writerow(header)
+
+    votes = Vote.objects.filter(poll__poll_collection__id=poll_collection_id).distinct('user')
+
+    for vote in votes:
+        user = vote.user
+        
+        mnr = ""
+        email = user.email
+        if hasattr(user, 'userprofile'):
+            email, _ = user.userprofile.mail_for_mailinglist()
+
+            if user.userprofile.evh_mitgliedsnummer:
+                mnr = str(user.userprofile.evh_mitgliedsnummer)
+
+        out.writerow([
+            mnr,
+            user.first_name,
+            user.last_name,
+            email,
+        ])
 
     return response
 

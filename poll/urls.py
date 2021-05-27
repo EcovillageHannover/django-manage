@@ -8,4 +8,5 @@ urlpatterns = [
     path('polls/<int:poll_collection_id>', poll_collection_view, name='view'),
     path('vote/<int:poll_id>', vote, name='vote'),
     path('export_raw/<int:poll_id>', export_raw, name='export_raw'),
+    path('polls/<int:poll_collection_id>/export_voters', export_voters, name='export_voters'),
 ]
