@@ -23,8 +23,14 @@ class GroupProfileInline(admin.StackedInline):
     verbose_name_plural = 'Profil'
     fk_name = 'group'
 
+
 class NewGroupAdmin(GroupAdmin):
     inlines = (GroupProfileInline, )
+    list_display = ('name', 'parent',)
+
+    def parent(self, group):
+        return group.groupprofile.parent
+
 
 admin.site.unregister(Group)
 admin.site.register(Group, NewGroupAdmin)

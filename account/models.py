@@ -63,11 +63,16 @@ class GroupProfile(models.Model):
     mailinglist_intern = models.BooleanField(default=False)
     mailinglist_announce = models.BooleanField(default=False)
 
-    editable = models.BooleanField(default=True)
-    parent   = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True, default=None,
+    parent   = models.ForeignKey(Group, on_delete=models.CASCADE,
+                                 null=True, blank=True, default=None,
                                  related_name="children")
 
-    def parents(self):
+    # Sync Control
+    synced_at  = models.DateTimeField(null=True, blank=True, default=None)
+    updated_at = models.DateTimeField(null=True, blank=True, default=None)
+
+    @property
+    def all_parents(self):
         """Get all parent groups of this group"""
         ret = []
         ptr = self
@@ -77,6 +82,11 @@ class GroupProfile(models.Model):
             ptr = ptr.parent.groupprofile
         return ret
 
+    @property
+    def children(self):
+        return [x.group for x in self.group.children.all()]
+
+    @property
     def all_children(self):
         """Get (recursively) all children groups."""
         ret = set()
@@ -150,7 +160,7 @@ class LDAP:
                                 settings.AUTH_LDAP_BIND_PASSWORD)
 
     def __del__(self):
-        logger.info("Close LDAP() Connection")
+        # logger.info("Close LDAP() Connection")
         fd = self.conn.fileno()
         self.conn.unbind_s()
 
@@ -186,6 +196,8 @@ class LDAP:
         ret = self.conn.search_s(settings.AUTH_LDAP_GROUP_DN,
                                  ldap.SCOPE_SUBTREE,
                                  f"cn={group}", ["owner"])
+
+        if not ret: return []
 
         owners = [x.decode().split(",")[0].split("=")[1] for x in ret[0][1].get('owner', [])]
         owners = list(map(self.search_user, owners))

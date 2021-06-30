@@ -167,8 +167,8 @@ class Mailman:
                 is_set.remove(element)
 
             # If we do not sync strict, we are fine here
-            for x in is_set - should_set:
-                print(x)
+            #for x in is_set - should_set:
+            #    print(x)
 
             if not strict: return
 
@@ -176,15 +176,14 @@ class Mailman:
                 logger.info(f"Remove[{tag}] {element} from list {mlist}")
                 remove(element)
 
-
         sync_tag('subscriber',
                  is_set=subscriber_mails,
                  should_set=member_should_set,
                  should_not_set=member_should_not_set,
                  add=lambda subscriber: mlist.subscribe(subscriber,
-                                                   pre_verified=True,
-                                                   pre_confirmed=True,
-                                                   pre_approved=True),
+                            pre_verified=True,
+                            pre_confirmed=True,
+                            pre_approved=True),
                  remove=lambda subscriber: mlist.unsubscribe(subscriber),
                  strict=strict)
 
@@ -198,7 +197,6 @@ class Mailman:
                      remove=lambda mail: mlist.remove_moderator(mail))
 
         for mod in mlist.moderators:
-            print("Moderator", mod, mod.moderation_action)
             if mod.moderation_action != 'accept':
                 mod.moderation_action = 'accept'
                 logger.info(f"{mod}: set moderation action to {mod.moderation_action}")

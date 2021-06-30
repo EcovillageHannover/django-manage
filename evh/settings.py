@@ -228,6 +228,7 @@ IMPERSONATE = {
     'URI_EXCLUSIONS': tuple(),
     'REDIRECT_FIELD_NAME': 'next',
     'REDIRECT_URL': '/account/profile',
+    'ADMIN_DELETE_PERMISSION': True,
 }
 
 CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'", "*.my-evh.de", "ecovillage-hannover.de", "*.ecovillage-hannover.de")

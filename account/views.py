@@ -20,9 +20,9 @@ from django.urls import reverse
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
 from account import signals
-from account.signals import user_changed
 from impersonate.signals import session_begin
 from django.contrib.auth import get_user_model
+from datetime import datetime
 import sys
 
 
@@ -30,7 +30,7 @@ import sys
 
 import evh.settings as config
 from evh.utils import parse_token
-from .models import Invite, ldap_addgroup, LDAP, GroupProfile, make_username
+from .models import Invite, LDAP, GroupProfile, make_username
 from .forms import *
 from .mailman import Mailman
 
@@ -139,19 +139,18 @@ def __create(request, context, vorname, nachname, username, mail):
     invite = Invite.find_by_mail(mail)
     groups = [g for g in (invite.groups or "").split(",") if g]
     for group in groups:
-        if ldap_addgroup(username, group):
-            signals.group_member_add.send(sender=create,
-                                          group=group,
-                                          member=User)
-            messages.add_message(request, messages.SUCCESS,
-                                 "Du wurdest der Gruppe %s hinzugefügt" % group)
+        signals.group_member_add.send(sender=create,
+                                      group=group,
+                                      member=User)
+        messages.add_message(request, messages.SUCCESS,
+                             "Du wurdest der Gruppe %s hinzugefügt" % group)
 
     ################################################################
     # Login user
     user = authenticate(username=username, password=password)
     login(request, user)
 
-    user_changed.send(sender=create, username=username)
+    signals.user_changed.send(sender=create, username=username)
 
     ################################################################
     # Mail versenden
@@ -254,8 +253,8 @@ def password_reset(request, uidb64, token):
 
 @login_required
 def profile(request):
-    user_changed.send(sender=profile, username=request.user.username)
-    user = LDAPBackend().populate_user(request.user.username)
+    signals.user_changed.send(sender=profile, username=request.user.username)
+    # user = LDAPBackend().populate_user(request.user.username)
     user = request.user
     l = LDAP()
     if hasattr(user, 'userprofile'):
@@ -334,6 +333,9 @@ def __resolve_group(request, group):
        and not request.user.is_superuser:
         return HttpResponse('Permission denied', status=403)
 
+    # Ensure that the Group Profile exists
+    GroupProfile.objects.get_or_create(group=groups[0])
+
     return groups[0]
 
 def __resolve_user(username, email=None):
@@ -368,7 +370,6 @@ def group(request, group):
     GroupProfileForm = modelform_factory(GroupProfile,
                                                fields=('mailinglist_intern',
                                                        'mailinglist_announce'))
-
     if request.method == 'POST':
         form = GroupProfileForm(request.POST)
         if form.is_valid():
@@ -377,40 +378,42 @@ def group(request, group):
             profile.save()
         else:
             return HttpResponse('Bad Form', status=503)
-    else:
-        profile, _ = GroupProfile.objects.get_or_create(group=group)
 
     # Mailinglist
     m3 = Mailman()
     mlists = m3.get_lists()
 
+    is_hierarchical = len(group.groupprofile.children) > 0
+
     return render(request, 'account/group.html', {
         'group': group,
-        'group_profile_form': GroupProfileForm(instance=profile),
+        'profile': group.groupprofile,
+        'is_hierarchical': is_hierarchical,
+        'group_profile_form': GroupProfileForm(instance=group.groupprofile),
         'owners': [m['username'] for m in LDAP().group_owners(group)],
-        'members': LDAP().group_members(group),
+        'members': group.user_set.all(), # LDAP().group_members(group),
         'mlist_discuss': mlists.get(f"{group}"),
         'mlist_news': mlists.get(f"{group}-news"),
     })
 
-@login_required
-def group_view(request, group):
-    if group != 'genossenschaft':
-        return HttpResponse('Permission denied', status=403)
+# @login_required
+# def group_view(request, group):
+#     if group != 'genossenschaft':
+#         return HttpResponse('Permission denied', status=403)
 
-    group = __resolve_group(request, group)
-    if isinstance(group, HttpResponse):
-        return group
+#     group = __resolve_group(request, group)
+#     if isinstance(group, HttpResponse):
+#         return group
 
+#     if len(set(request.user.groups.values_list('name',flat=True))\
+#            & set(['dorfrat-kronsberg-koordination', 'evh-admin'])) == 0:
+#         return HttpResponse('Permission denied', status=403)
 
-    if len(set(request.user.groups.values_list('name',flat=True))\
-           & set(['dorfrat-kronsberg-koordination', 'evh-admin'])) == 0:
-        return HttpResponse('Permission denied', status=403)
-
-    return render(request, 'account/group_view.html', {
-        'group': group,
-        'members': LDAP().group_members(group)
-    })
+#     return render(request, 'account/group_view.html', {
+#         'group': group,
+#         'members': LDAP().group_members(group),
+#         'profile': profile,
+#     })
 
 
 
@@ -440,17 +443,12 @@ def group_member_add(request, group):
         return HttpResponseRedirect(group_url)
 
     if request.method == 'POST':
-        if LDAP().group_member_change(group.name, user.username, mode="add"):
-            messages.add_message(request, messages.SUCCESS,
-                                 f"Nutzer {user.username} hinzugefügt.")
-
-            user_changed.send(sender=group_member_add, username=user.username)
-            signals.group_member_add.send(sender=group_member_add,
-                                          group=group,
-                                          member=user)
-        else:
-            messages.add_message(request, messages.ERROR,
-                                 f"Nutzer {user.username} hinzufügen fehlgeschlagen.")
+        signals.user_changed.send(sender=group_member_add, username=user.username)
+        signals.group_member_add.send(sender=group_member_add,
+                                      group=group,
+                                      member=user)
+        messages.add_message(request, messages.SUCCESS,
+                             f"Nutzer {user.username} hinzugefügt.")
 
         return HttpResponseRedirect(request.POST['next'])
 
@@ -483,16 +481,12 @@ def group_member_remove(request, group, username):
         return HttpResponseRedirect(group_url)
 
     if request.method == 'POST':
-        if LDAP().group_member_change(group.name, user.username, mode="remove"):
-            messages.add_message(request, messages.SUCCESS,
-                                 f"Nutzer {user.username} entfernt.")
-
-            user_changed.send(sender=group_member_remove, username=user.username)
-            signals.group_member_remove.send(sender=group_member_remove,
+        signals.user_changed.send(sender=group_member_remove, username=user.username)
+        signals.group_member_remove.send(sender=group_member_remove,
                                              group=group, member=user)
-        else:
-            messages.add_message(request, messages.ERROR,
-                                 f"Nutzer {user.username} entfernen fehlgeschlagen.")
+        messages.add_message(request, messages.SUCCESS,
+                             f"Nutzer {user.username} entfernt.")
+
         return HttpResponseRedirect(request.POST['next'])
 
     return render(request, 'account/confirm.html', dict(

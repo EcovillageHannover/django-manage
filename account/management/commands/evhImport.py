@@ -8,6 +8,8 @@ from django_auth_ldap.backend import LDAPBackend
 
 from account.models import *
 from account.mailman import Mailman
+from account import signals
+
 import evh.settings_local as config
 import csv
 import os
@@ -134,7 +136,7 @@ class Command(BaseCommand):
             django_group = Group.objects.get(name='ecotopia-mitglieder')
         elif self.options['mode'] == 'ecovillage':
             django_group = Group.objects.get(name='genossenschaft')
-    
+
         django_group_members = django_group.user_set.all()
         for user in django_group_members:
             if user not in genossen_users:
@@ -145,9 +147,9 @@ class Command(BaseCommand):
         for user in genossen_users:
             if user not in django_group_members:
                 logger.warning(f'CSV > LDAP: User {user} is in CSV group but not in LDAP')
-                ldap_addgroup(user.username, django_group.name)
-                LDAPBackend().populate_user(user.username)
-
+                signals.group_member_add.send(sender=self.match_against_django,
+                                              group=django_group,
+                                              member=user)
 
         ################################################################
         # Subscribe to genossenschaft und genossenschaft-news

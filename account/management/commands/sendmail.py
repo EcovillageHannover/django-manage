@@ -18,9 +18,6 @@ from .invite  import read_csv
 import logging
 logger = logging.getLogger(__name__)
 
-    
-
-
 
 class Command(BaseCommand):
     help = 'Send account invite mails'

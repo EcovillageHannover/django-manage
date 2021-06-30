@@ -8,18 +8,18 @@
 {% block content %}
 {% if form %}
 
-<h2 style="color: red;">Ecovillage Newsletter Abmeldung</h2>
+<h2 style="color: red;">ecovillage Newsletter Abmeldung</h2>
 
 <p>
   Um dich von einem oder mehreren Newslettern der ecovillage hannover
-  e.G. abzumelden, gibt bitte in unten stehenden Feld deine
+  eG abzumelden, gib bitte in unten stehendes Feld deine
   Mailadresse ein. Anschließend erhältst Du eine E-Mail mit einem Link
-  unter dem du dich abmelden kann.</p>
+  unter dem du dich abmelden kannst.</p>
 
 <form method="POST" action="{% url 'newsletter:unsubscribe'%}">
   {% csrf_token %}
 {% bootstrap_form form layout='inline' %}
-  {% bootstrap_button "Vom Newsletter abmelden" button_type="submit" button_class="btn-info" %}
+  {% bootstrap_button "vom Newsletter abmelden" button_type="submit" button_class="btn-info" %}
 </form>
 {% endif %}
 {% endblock %}

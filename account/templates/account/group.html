@@ -24,6 +24,8 @@ Gruppe: {{group}}
 
 <p>Mitglieder einer Gruppe sind Menschen, die bei der Gruppe mitmachen oder mitarbeiten wollen. Wenn du jemanden zum Mitglied einer Gruppe machst, so erhält dieser Mensch <strong>erweiterte Rechte</strong>. Daher ist die Gruppenmitgliedschaft vom reinen Interesse an einer Gruppe zu unterscheiden. Ein guter Indikator für Gruppenmitgliedschaft, ist das mehrfache Besuchen eines Gruppentreffens.</p>
 
+{% if not is_hierarchical %}
+
 <h3>Mitglied hinzufügen</h3>
 <p>Wenn ein Teilnehmer bereits einen EVH-Account hat, kannst du ihn über das folgende Feld der Gruppe hinzufügen!</p>
 <form method="GET" action="{% url 'account:group_member_add' group.name %}">
@@ -59,6 +61,33 @@ Gruppe: {{group}}
   </div>
 </form>
 
+{% else %}{# Hierarchical Parent #}
+<h3>Hierarchische Gruppe</h3>
+
+Dies ist eine hierarchische Gruppe. Die Mitgliederliste wird aus den Mitgliederlisten von Untergruppen erstellt.
+
+<ul>
+  <li><strong>Direkte Untergruppen:</strong>
+    {% for group in  profile.children %}
+    <a href="{% url 'account:group' group%}">{{group}}</a>
+    {% endfor %}
+  </li>
+  <li><strong>Alle Untergruppen:</strong>
+    {% for group in  profile.all_children %}
+    <a href="{% url 'account:group' group%}">{{group}}</a>
+    {% endfor %}
+  </li>
+</ul>
+{% endif %}
+
+{% if profile.parent %}
+<h3>Übergruppen</h3>
+<p>Diese Gruppe ist eine Untergruppe einer anderen Gruppe. Die Mitglieder dieser sind auch Mitglied der Übergruppen.</p>
+<p>{% for group in  profile.all_parents %}
+    &gt; <a href="{% url 'account:group' group%}">{{group}}</a>
+  {% endfor %}
+  </p>
+{% endif %}
 
 <h3>Mitgliedsliste ({{members |length}} Personen)</h3>
 <em class="float-right">Gruppenverwalter sind grün hevorgehoben.</em>
@@ -75,8 +104,8 @@ Gruppe: {{group}}
     <tbody>
       {% for member in members %}
         <tr {% if member.username in owners %}class="table-success"{% endif %}>
-          <td>{{member.vorname}}</td>
-          <td>{{member.nachname}}</td>
+          <td>{{member.first_name}}</td>
+          <td>{{member.last_name}}</td>
           <td>{{member.username}}</td>
           <td><a href="{% url 'account:group_member_remove' group.name member.username %}?next={{request.path}}"><span class="badge badge-danger">Entfernen</span></a>
           </td>
