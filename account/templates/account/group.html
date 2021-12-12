@@ -97,17 +97,27 @@ Dies ist eine hierarchische Gruppe. Die Mitgliederliste wird aus den Mitgliederl
         <th>Vorname</th>
         <th>Nachname</th>
         <th>Username</th>
+        {% if is_hierarchical %}
+        <th>Untergruppen</th>
+        {% else %}
         <th>Aktion</th>
+        {% endif %}
 
       </tr>
     </thead>
     <tbody>
-      {% for member in members %}
+      {% for member, subgroups in members %}
         <tr {% if member.username in owners %}class="table-success"{% endif %}>
           <td>{{member.first_name}}</td>
           <td>{{member.last_name}}</td>
           <td>{{member.username}}</td>
-          <td><a href="{% url 'account:group_member_remove' group.name member.username %}?next={{request.path}}"><span class="badge badge-danger">Entfernen</span></a>
+          <td>{% if is_hierarchical %}
+            {% for subgroup in subgroups %}
+            <a href="{% url 'account:group' subgroup%}">{{subgroup}}</a>
+            {% endfor %}
+            {% else %}
+            <a href="{% url 'account:group_member_remove' group.name member.username %}?next={{request.path}}"><span class="badge badge-danger">Entfernen</span></a>
+            {% endif %}
           </td>
         </tr>
       {% endfor %}

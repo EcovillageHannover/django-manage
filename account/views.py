@@ -381,7 +381,13 @@ def group(request, group):
     m3 = Mailman()
     mlists = m3.get_lists()
 
-    is_hierarchical = len(group.groupprofile.children) > 0
+    members = group.user_set.all().order_by('last_name')
+    all_children_groups = set(group.groupprofile.all_children)
+    is_hierarchical = len(all_children_groups) > 0
+    subgroups = {}
+    if is_hierarchical:
+        for member in members:
+            subgroups[member] = all_children_groups & set(member.groups.all())
 
     return render(request, 'account/group.html', {
         'group': group,
@@ -389,7 +395,7 @@ def group(request, group):
         'is_hierarchical': is_hierarchical,
         'group_profile_form': GroupProfileForm(instance=group.groupprofile),
         'owners': [m['username'] for m in LDAP().group_owners(group)],
-        'members': group.user_set.all().order_by('last_name'), # LDAP().group_members(group),
+        'members': [(x, subgroups.get(x)) for x in members], 
         'mlist_discuss': mlists.get(f"{group}"),
         'mlist_news': mlists.get(f"{group}-news"),
     })
