@@ -132,23 +132,22 @@ def __create(request, context, vorname, nachname, username, mail):
         context['success'] = False
         return
 
-    User = LDAP().search_user(username)
+    ################################################################
+    # Login user
+    user = authenticate(username=username, password=password)
+    login(request, user)
 
     ################################################################
     # Initial Groups
     invite = Invite.find_by_mail(mail)
     groups = [g for g in (invite.groups or "").split(",") if g]
     for group in groups:
+        group = Group.objects.get(name=group)
         signals.group_member_add.send(sender=create,
                                       group=group,
-                                      member=User)
+                                      member=user)
         messages.add_message(request, messages.SUCCESS,
                              "Du wurdest der Gruppe %s hinzugefügt" % group)
-
-    ################################################################
-    # Login user
-    user = authenticate(username=username, password=password)
-    login(request, user)
 
     signals.user_changed.send(sender=create, username=username)
 
@@ -254,9 +253,8 @@ def password_reset(request, uidb64, token):
 @login_required
 def profile(request):
     signals.user_changed.send(sender=profile, username=request.user.username)
-    # user = LDAPBackend().populate_user(request.user.username)
     user = request.user
-    l = LDAP()
+    ldap = LDAP()
     if hasattr(user, 'userprofile'):
         mlist_primary, _ = user.userprofile.mail_for_mailinglist()
     else:
@@ -266,8 +264,8 @@ def profile(request):
         'user': request.user,
         'user_profile_form': UserProfileForm(instance=request.user),
         'groups': [group.name for group in user.groups.all()],
-        'own_groups':  l.owned_groups(user.username),
-        'managed_users': l.managed_users(user.username),
+        'own_groups':  ldap.owned_groups(user.username),
+        'managed_users': ldap.managed_users(user.username),
         'mlists': Mailman().get_lists(mlist_primary).values(),
     })
 
@@ -391,7 +389,7 @@ def group(request, group):
         'is_hierarchical': is_hierarchical,
         'group_profile_form': GroupProfileForm(instance=group.groupprofile),
         'owners': [m['username'] for m in LDAP().group_owners(group)],
-        'members': group.user_set.all(), # LDAP().group_members(group),
+        'members': group.user_set.all().order_by('last_name'), # LDAP().group_members(group),
         'mlist_discuss': mlists.get(f"{group}"),
         'mlist_news': mlists.get(f"{group}-news"),
     })
@@ -516,8 +514,7 @@ def group_member_invite(request, group):
         return HttpResponseRedirect(group_url)
     username = make_username(vorname, nachname)
 
-    
-
+    # FIXME: Make Django Database the primary source
     user = LDAP().search_user(email)
     user = user or LDAP().search_user(username)
     if user:
@@ -534,7 +531,22 @@ def group_member_invite(request, group):
             username=username,
             email=email,
             group=[group.name])
-        send_invite_mail(account)
+        preface=f"Du wurdest von {request.user} zur Gruppe {group.name} eingeladen."
+        send_invite_mail(account, preface=preface)
+
+        # Bestätigungsmail
+        msg_plain = render_to_string('registration/invite-confirm.txt',
+                                     dict(vorname=vorname,
+                                          nachname=nachname,
+                                          email=email,
+                                          inviter=request.user,
+                                          group=group))
+
+        send_mail("[EVH Account] Nutzer eingeladen: " +username, msg_plain,
+                  config.EMAIL_FROM,
+                  [request.user.email, config.EMAIL_FROM],
+                  fail_silently=True)
+
         messages.add_message(request, messages.INFO,
                                  f"Einladung verschickt!")
         return HttpResponseRedirect(group_url)

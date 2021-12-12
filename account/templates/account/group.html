@@ -22,12 +22,12 @@ Gruppe: {{group}}
 
 <h2>Mitglieder</h2>
 
-<p>Mitglieder einer Gruppe sind Menschen, die bei der Gruppe mitmachen oder mitarbeiten wollen. Wenn du jemanden zum Mitglied einer Gruppe machst, so erhält dieser Mensch <strong>erweiterte Rechte</strong>. Daher ist die Gruppenmitgliedschaft vom reinen Interesse an einer Gruppe zu unterscheiden. Ein guter Indikator für Gruppenmitgliedschaft, ist das mehrfache Besuchen eines Gruppentreffens.</p>
+<p>Mitglieder einer Gruppe sind Menschen, die bei der Gruppe mitmachen oder mitarbeiten wollen. Wenn du jemanden zum Mitglied einer Gruppe machst, so erhält dieser Mensch <strong>erweiterte Rechte</strong>. Daher ist die Gruppenmitgliedschaft vom reinen Interesse an einer Gruppe zu unterscheiden. Ein guter Indikator für Gruppenmitgliedschaft ist das mehrfache Besuchen eines Gruppentreffens.</p>
 
 {% if not is_hierarchical %}
 
 <h3>Mitglied hinzufügen</h3>
-<p>Wenn ein Teilnehmer bereits einen EVH-Account hat, kannst du ihn über das folgende Feld der Gruppe hinzufügen!</p>
+<p>Wenn ein:e Teilnehmer:in bereits einen EVH-Account hat, kannst du ihn/sie über das folgende Feld der Gruppe hinzufügen!</p>
 <form method="GET" action="{% url 'account:group_member_add' group.name %}">
   {% csrf_token %}
   <div class="form-group row mt-4">
@@ -42,7 +42,7 @@ Gruppe: {{group}}
 
 
 <h3>Mitglied einladen</h3>
-<p>Wenn ein Teilnehmer noch <strong>keinen EVH-Account hat</strong>, kannst du ihm einen Einladungslink schicken, über den sie/er einen EVH-Account anlegen kann und direkt Mitglied der Gruppe wird. <strong>Verwende dieses Feature mit Vorsicht, da wir ansonsten doppelte Accounts bekommen! Genossenschaftsmitglieder haben immer bereits einen Account</strong></p>
+<p>Wenn ein:e Teilnehmer:in noch <strong>keinen EVH-Account hat</strong>, kannst du ihm/ihr einen Einladungslink schicken, über den er/sie einen EVH-Account anlegen kann und direkt Mitglied der Gruppe wird. <strong>Verwende dieses Feature mit Vorsicht, da wir ansonsten doppelte Accounts bekommen! Genossenschaftsmitglieder haben immer bereits einen Account</strong></p>
 <form method="GET" action="{% url 'account:group_member_invite' group.name %}">
   {% csrf_token %}
   <div class="form-group row mt-4">
@@ -90,7 +90,7 @@ Dies ist eine hierarchische Gruppe. Die Mitgliederliste wird aus den Mitgliederl
 {% endif %}
 
 <h3>Mitgliedsliste ({{members |length}} Personen)</h3>
-<em class="float-right">Gruppenverwalter sind grün hevorgehoben.</em>
+<em class="float-right">Gruppenverwalter:innen sind grün hevorgehoben.</em>
 <table class="table table-striped">
     <thead>
       <tr>
@@ -117,21 +117,18 @@ Dies ist eine hierarchische Gruppe. Die Mitgliederliste wird aus den Mitgliederl
 {% if mlist_discuss or mlist_news %}
 <hr/>
 <h2>Kommunikationstool: Mailinglisten</h2>
-<p>Über Mailinglisten kannst du Nachrichten an die Mitglieder der Gruppe schicken und die Gruppenmitglieder können untereinander in Austausch treten. Ganz allgemein hat eine <em>Mailingliste</em> eine Addresse und eine Liste an Abonementen. Schreibt jemand eine Mail an die Addresse der Liste, so bekommen alle Abonementen die Nachricht. Für deine Gruppe, sind aktuell folgende Mailinglisten installiert:</p>
+<p>Über Mailinglisten kannst du Nachrichten an die Mitglieder der Gruppe schicken und die Gruppenmitglieder können untereinander in Austausch treten. Ganz allgemein hat eine <em>Mailingliste</em> eine Adresse und eine Liste an Abonnent:innen. Schreibt jemand eine Mail an die Adresse der Liste, so bekommen alle Abonnent:innen diese Mail. Für deine Gruppe, sind aktuell folgende Mailinglisten installiert:</p>
 <ul>
   {% if mlist_discuss %}
-  <li><strong><a href="https://list.my-evh.de/hyperkitty/list/{{mlist_discuss.fqdn_listname}}/">{{mlist_discuss.fqdn_listname}}</a></strong> ({{mlist_discuss.member_count}} Abonenten) -- Auf dieser Diskussionsliste sind alle Mitglieder der Gruppe automatisch
-Abonnenten. Jedes Mitglied hat hier das Recht eine Mail an alle anderen zu
+  <li><strong><a href="https://list.my-evh.de/hyperkitty/list/{{mlist_discuss.fqdn_listname}}/">{{mlist_discuss.fqdn_listname}}</a></strong> ({{mlist_discuss.member_count}} Abonnent:innen) -- Auf dieser Diskussionsliste sind alle Mitglieder der Gruppe automatisch
+Abonnent:innen. Jedes Mitglied hat hier das Recht eine Mail an alle anderen zu
 senden. Diese Liste ist zur Diskussion innerhalb der Gruppe gedacht.</li>
   {% endif %}
   {% if mlist_news %} <li>
     <p><a href="https://list.my-evh.de/hyperkitty/list/{{mlist_news.fqdn_listname}}/message/new"><strong>{{mlist_news.fqdn_listname}}</strong></a>
       <!-- <a href="https://list.my-evh.de/postorius/lists/{{mlist_news.list_id}}/mass_subscribe/">Eintragung durch Dich</a>-->
-    ({{mlist_news.member_count}} Abonenten) -- Auf diese
-    Ankündigungsliste sind alle Mitglieder der Gruppe automatisch
-    Abonennten. Zusätzlich können sich weitere Interessierte die
-      Liste abonniert haben (<a href="https://list.my-evh.de/postorius/lists/{{mlist_news.list_id}}/">Selbsteintragung</a>). Nur du kann Nachrichten an diese  Mailingliste Nachrichten schicken, da sie dafür gedacht ist Ankündigungen an alle Interessierten zu machen.<br/>
-     Falls du bereits eine Liste an Interessierten hast, die du auf diese Ankündigungsliste setzen möchtest, musst du aktuell den Umweg über support@my-evh.de machen. Wir arbeiten an einer Lösung.</p>
+    ({{mlist_news.member_count}} Abonnent:innen) -- Auf dieser Ankündigungsliste sind alle Mitglieder der Gruppe automatisch Abonnent:innen. Zusätzlich können sich weitere Interessierte die Liste abonniert haben (<a href="https://list.my-evh.de/postorius/lists/{{mlist_news.list_id}}/">Selbsteintragung</a>). Nur du kannst Nachrichten an diese Mailingliste schicken, da sie dafür gedacht ist Ankündigungen an alle Interessierten zu machen.<br/>
+     Falls du bereits eine Liste an Interessierten hast, die du auf diese Ankündigungsliste setzen möchtest, musst du aktuell den Umweg über support@my-evh.de gehen. Wir arbeiten an einer Lösung.</p>
   </li> {%  endif %}
 </ul>
 {% endif %}

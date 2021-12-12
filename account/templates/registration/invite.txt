@@ -1,5 +1,6 @@
 Hallo {{vorname}} {{nachname}},
-{% if preface %}{{preface}}{% endif %}
+{% if preface %}
+{{preface}}{% endif %}
 
 Diese Mail enthält alle nötigen Daten um einen Account beim ecovillage
 hannover zu erstellen. Wenn du einen Account erstellen möchtest, dann

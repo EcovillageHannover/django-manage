@@ -37,7 +37,7 @@
       </a>
     {% endif %}
       {{ poll_collection.description | markdownify  }}
-      <strong>Insgesamt haben {{voting_users}} NutzerInnen an mindestens eine Frage beantwortet.
+      <strong>Bisher haben {{voting_users}} Nutzer:innen mindestens eine Frage beantwortet.
       </strong>
       {% if can_export %}
       <a href="{% url 'poll:export_voters' poll_collection.id %}"><span class="badge badge-success">Export</span></a>
