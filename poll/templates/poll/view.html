@@ -41,7 +41,9 @@
       </strong>
       {% if can_export %}
       <a href="{% url 'poll:export_voters' poll_collection.id %}"><span class="badge badge-success">Export</span></a>
+      <a href="{% url 'poll:export_pc_raw' poll_collection.id %}"><span class="badge badge-success">Export (komplett)</span></a>
       {% endif %}
+      
   </div>
 
   {% if not print_mode %}

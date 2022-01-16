@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .utils import set_cookie
 from zlib import crc32
+from collections import defaultdict
 import csv
 import logging
 logger = logging.getLogger("poll")
@@ -227,6 +228,74 @@ def export_raw(request, poll_id):
             row += [d.get(i) for i in poll.items]
         out.writerow(row)
 
+
+    return response
+
+
+@login_required
+def export_pc_raw(request, poll_collection_id):
+    try:
+        pc = PollCollection.objects.get(pk=poll_collection_id)
+    except PollCollection.DoesNotExist:
+        return HttpResponse('Wrong parameters', status=400)
+
+    can_export = pc.can_export(request.user)
+    can_change = pc.can_change(request.user)
+
+    if not can_export:
+        return HttpResponse('NotFound', status=404)
+
+    response = HttpResponse(
+        content_type="text/csv",
+        status=200)
+    response['Content-Disposition'] = f'attachment; filename="pc_{poll_collection_id}.csv'
+
+    header = ["PollCollectionID", "EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail"]
+
+    data = defaultdict(dict)
+    polls = list(pc.polls.order_by('position').all())
+    votes = Vote.objects.filter(poll__poll_collection__id=poll_collection_id)
+    users = set([vote.user for vote in votes])
+    for user in users:
+        mnr = ""
+        email = user.email
+        if hasattr(user, 'userprofile'):
+            email, _ = user.userprofile.mail_for_mailinglist()
+
+            if user.userprofile.evh_mitgliedsnummer:
+                mnr = str(user.userprofile.evh_mitgliedsnummer)
+        row = data[user.id]
+        row['EVH Mitgliedsnummer'] = mnr
+        row['E-Mail'] = email
+        row['Vorname'] = user.first_name
+        row['Familienname'] = user.last_name
+
+        for poll in polls:
+            poll_votes = [x for x in votes if x.poll == poll and x.user == user]
+            poll_key = poll.export_key or poll.question
+            row['PollCollectionID'] = poll_collection_id
+            if not poll_votes: continue
+
+            if poll.poll_type == Poll.RADIO:
+                assert len(set([v.item for v in poll_votes])) == 1, poll_votes
+                row[poll_key] = (poll_votes[0].item.export_key or poll_votes[0].item.value)
+            elif poll.poll_type == Poll.TEXT:
+                row[poll_key] = poll_votes[0].text
+            elif poll.poll_type in (Poll.CHECKBOX, ):
+                for v in poll_votes:
+                    key = v.item.export_key or v.item.value
+                    row[f"{poll_key}/{key}"] = 1
+            elif poll.poll_type in (Poll.YESNONONE, Poll.PRIO):
+                for v in poll_votes:
+                    key = v.item.export_key or v.item.value
+                    row[f"{poll_key}/{key}"] = v.text
+        for f in row.keys():
+            if f not in header:
+                header.append(f)
+
+    out = csv.DictWriter(response, header)
+    out.writeheader()
+    out.writerows(data.values())
 
     return response
 

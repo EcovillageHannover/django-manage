@@ -111,6 +111,8 @@ class Poll(models.Model):
 
     max_votes = models.SmallIntegerField(default=-1,blank=True,null=True)
 
+    export_key = models.CharField(max_length=255, blank=True, null=True, unique=False)
+
     class Meta:
         verbose_name = "Frage"
         verbose_name_plural = "Fragen"
@@ -149,7 +151,7 @@ class Poll(models.Model):
                 if self.is_prio:
                     votes = Vote.objects.filter(item=item)
                     if len(votes):
-                        avg =  sum(int(v.text) for v in votes) / float(votes.count())
+                        avg =  sum(int(v.text or '0') for v in votes) / float(votes.count())
                     else:
                         avg = 0.0
                     ret += [(item, "%.1f"%avg, int(avg/5.0*100))]

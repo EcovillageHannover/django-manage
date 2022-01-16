@@ -53,11 +53,11 @@ class Command(BaseCommand):
     def match_against_django(self, genossen, mail_addresses):
         UserModel = get_user_model()
 
-        snowflakes = {} # Mail -> Username
+        snowflakes = {} # Pattern -> Username
         with open('invites/snowflakes.csv') as fd:
             sfs = csv.DictReader(fd)
             for sf in sfs:
-                snowflakes[sf['mail'].lower().strip()] = sf['username'].strip().lower()
+                snowflakes[sf['pattern'].lower().strip()] = sf['username'].strip().lower()
 
         ################################################################
         # Open File for Invites
@@ -72,8 +72,10 @@ class Command(BaseCommand):
             if not email:        continue
             if not '@' in email: continue
 
-            if email in snowflakes:
-                username = snowflakes[email]
+            if f"email={email}" in snowflakes:
+                username = snowflakes[f"email={email}"]
+            elif f"mnr={mnr}" in snowflakes:
+                username = snowflakes[f"mnr={mnr}"]
             else:
                 username = make_username(g['Vorname'].strip(), g['Familienname'].strip())
 
