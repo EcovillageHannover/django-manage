@@ -149,7 +149,7 @@ def __create(request, context, vorname, nachname, username, mail):
         messages.add_message(request, messages.SUCCESS,
                              "Du wurdest der Gruppe %s hinzugefügt" % group)
 
-    signals.user_changed.send(sender=create, username=username)
+    signals.user_changed.send(sender=create, user=user)
 
     ################################################################
     # Mail versenden
@@ -252,7 +252,7 @@ def password_reset(request, uidb64, token):
 
 @login_required
 def profile(request):
-    signals.user_changed.send(sender=profile, username=request.user.username)
+    signals.user_changed.send(sender=profile, user=request.user)
     user = request.user
     ldap = LDAP()
     if hasattr(user, 'userprofile'):
@@ -447,7 +447,7 @@ def group_member_add(request, group):
         return HttpResponseRedirect(group_url)
 
     if request.method == 'POST':
-        signals.user_changed.send(sender=group_member_add, username=user.username)
+        signals.user_changed.send(sender=group_member_add, user=user)
         signals.group_member_add.send(sender=group_member_add,
                                       group=group,
                                       member=user)
@@ -485,7 +485,7 @@ def group_member_remove(request, group, username):
         return HttpResponseRedirect(group_url)
 
     if request.method == 'POST':
-        signals.user_changed.send(sender=group_member_remove, username=user.username)
+        signals.user_changed.send(sender=group_member_remove, user=user)
         signals.group_member_remove.send(sender=group_member_remove,
                                              group=group, member=user)
         messages.add_message(request, messages.SUCCESS,

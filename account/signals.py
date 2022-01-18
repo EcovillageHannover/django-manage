@@ -27,17 +27,16 @@ return [
 
 """
 
-user_changed = django.dispatch.Signal(providing_args=["username"])
+user_changed = django.dispatch.Signal(providing_args=["user"])
 @django.dispatch.receiver(user_changed)
 def user_changed_hook(sender, **kwargs):
-    username = kwargs['username']
-    logger.info("User Changed Hook: %s", username)
-    user = LDAPBackend().populate_user(username)
-    groups = set(user.ldap_user.group_names)
+    user = kwargs['user']
+    logger.info("User Changed Hook: %s", user)
+    groups = set(user.groups.values_list('name',flat=True))
 
     ################################################################
     # Kirby
-    directory = Path(settings.KIRBY_ACCOUNTS_DIRECTORY) / username
+    directory = Path(settings.KIRBY_ACCOUNTS_DIRECTORY) / user.username
     index_php = directory / "index.php"
     if groups & set(['genossenschaft',
                      'wettbewerb-jury',

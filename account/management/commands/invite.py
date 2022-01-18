@@ -210,7 +210,8 @@ class Command(BaseCommand):
                 if options['action:group']:
                     for group in missing_groups:
                         ldap_addgroup(a.username, group)
-                        user_changed.send(sender=self.__class__, username=a.username)
+                        
+                        # user_changed.send(sender=self.__class__, username=a.username)
 
 
         ################################################################

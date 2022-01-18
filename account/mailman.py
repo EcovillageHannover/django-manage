@@ -68,7 +68,6 @@ class Mailman:
                 "^.*@ecovillage-hannover.de",
                 "^.*@ecotopia-hannover.de",
                 "^.*@my-evh.de",
-                "^.*@postfach.my-evh.de",
                 "^.*@amsel-kollektiv.de",
             ]))
 

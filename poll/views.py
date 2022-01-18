@@ -280,7 +280,7 @@ def export_pc_raw(request, poll_collection_id):
                 assert len(set([v.item for v in poll_votes])) == 1, poll_votes
                 row[poll_key] = (poll_votes[0].item.export_key or poll_votes[0].item.value)
             elif poll.poll_type == Poll.TEXT:
-                row[poll_key] = poll_votes[0].text
+                row[poll_key] = poll_votes[0].text.replace("\n", "|").replace("\r", "")
             elif poll.poll_type in (Poll.CHECKBOX, ):
                 for v in poll_votes:
                     key = v.item.export_key or v.item.value
@@ -293,7 +293,7 @@ def export_pc_raw(request, poll_collection_id):
             if f not in header:
                 header.append(f)
 
-    out = csv.DictWriter(response, header)
+    out = csv.DictWriter(response, header, quotechar='"', escapechar='\\')
     out.writeheader()
     out.writerows(data.values())
 

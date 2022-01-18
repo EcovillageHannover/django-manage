@@ -50,9 +50,11 @@ class Command(BaseCommand):
                 logger.info("DEL(hierarchical) %s", must_del)
                 must_del.groups.remove(group)
 
+                # FIXME: Unsubscribe from news list
+
     def sync_group_to_ldap(self, group):
         """Sync Group Memberships from Django to LDAP"""
-        if group.name in set(['ldap-user', 'mail-user', 'ag-gastgeber']):
+        if group.name in set(['ldap-user', 'mail-user']):
             return
 
         group_members = group.user_set.all()
@@ -65,9 +67,9 @@ class Command(BaseCommand):
             self.ldap.group_member_change(group.name, must_del, mode="remove")
             logger.info("DEL(ldap) %s", must_del)
 
+
     def sync_group_mailman(self,group):
-        if group.name in set(['ag-gastgeber',
-                              'genossenschaft',
+        if group.name in set(['genossenschaft',
                               'ecotopia-vorstand',
                               'ecotopia-aufsichtsrat',
                               'ecotopia-mitglieder']):
@@ -113,7 +115,7 @@ class Command(BaseCommand):
                            display_name=prefix,
                            subject_prefix=f"[{prefix}] ",
                            )
-            if  str(group).startswith('kronsberg-h'):
+            if  str(group).startswith('kronsberg-') or str(group).startswith("verein-"):
                 strict=True
             else:
                 strict=False
@@ -147,7 +149,7 @@ class Command(BaseCommand):
         profile.save()
 
     def handle(self, *args, **options):
-        users = ldap_users()
+        users = UserModel.objects.all()
         ## Sync LDAP -> Django
         #print(users)
         #for U in  users:
@@ -159,9 +161,9 @@ class Command(BaseCommand):
         self.mlists = None
 
         if options['user']:
-            for username, user in users.items():
-                if options['user'] in ('all', username):
-                    user_changed.send(sender=self.__class__, username=username)
+            for user in users:
+                if options['user'] in ('all', user.username):
+                    user_changed.send(sender=self.__class__, user=user)
 
         for group in Group.objects.all():
             if options['user']: break 

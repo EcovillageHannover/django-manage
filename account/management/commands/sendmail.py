@@ -10,7 +10,6 @@ from collections import namedtuple
 import evh.settings_local as config
 from django.urls import reverse
 from django.template.loader import render_to_string
-from account.signals import user_changed
 
 from .invite  import read_csv
 
