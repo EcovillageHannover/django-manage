@@ -41,25 +41,42 @@ Gruppe: {{group}}
 </form>
 
 
-<h3>Mitglied einladen</h3>
-<p>Wenn ein:e Teilnehmer:in noch <strong>keinen EVH-Account hat</strong>, kannst du ihm/ihr einen Einladungslink schicken, über den er/sie einen EVH-Account anlegen kann und direkt Mitglied der Gruppe wird. <strong>Verwende dieses Feature mit Vorsicht, da wir ansonsten doppelte Accounts bekommen! Genossenschaftsmitglieder haben immer bereits einen Account</strong></p>
-<form method="GET" action="{% url 'account:group_member_invite' group.name %}">
-  {% csrf_token %}
-  <div class="form-group row mt-4">
-    <div class="col-md-3">
-      <input type="text" class="form-control" name="vorname" placeholder="Vorname">
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control" name="nachname" placeholder="Nachname">
-    </div>
-    <div class="col-md-3">
-      <input type="email" class="form-control" name="email" placeholder="E-Mailaddresse">
-    </div>
-    <div class="col-md-2">
-      {% bootstrap_button "Einladen" button_type="submit" button_class="btn-info" %}
-    </div>
-  </div>
-</form>
+   <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+        <div class="panel panel-default">
+            <div class="panel-heading" role="tab" id="headingOne">
+                <h3 class="panel-title">
+                    <a class="first" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        <h3><strong>+</strong> Mitglied einladen einen <strong>neuen</strong> EVH Account zu erstellen</h3>
+                        <span> </span>
+                    </a>
+                </h3>
+            </div>
+            <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                <div class="panel-body">
+                  <p>Wenn ein:e Teilnehmer:in noch <strong>keinen EVH-Account hat</strong>, kannst du ihm/ihr einen Einladungslink schicken, über den er/sie einen EVH-Account anlegen kann und direkt Mitglied der Gruppe wird. <strong>Verwende dieses Feature mit Vorsicht, da wir ansonsten doppelte Accounts bekommen! Genossenschaftsmitglieder haben immer bereits einen Account</strong
+                  <form method="GET" action="{% url 'account:group_member_invite' group.name %}">
+                    {% csrf_token %}
+                    <div class="form-group row mt-4">
+                      <div class="col-md-3">
+                        <input type="text" class="form-control" name="vorname" placeholder="Vorname">
+                      </div>
+                      <div class="col-md-3">
+                        <input type="text" class="form-control" name="nachname" placeholder="Nachname">
+                      </div>
+                      <div class="col-md-3">
+                        <input type="email" class="form-control" name="email" placeholder="E-Mailaddresse">
+                      </div>
+                      <div class="col-md-2">
+                        {% bootstrap_button "Einladen" button_type="submit" button_class="btn-info" %}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+   </div>
+<br>
+
 
 {% else %}{# Hierarchical Parent #}
 <h3>Hierarchische Gruppe</h3>
