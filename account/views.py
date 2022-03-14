@@ -3,6 +3,7 @@
 from django_auth_ldap.backend import LDAPBackend
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import Group
 from django.forms import modelform_factory
 from django.shortcuts import render
@@ -497,6 +498,75 @@ def group_member_remove(request, group, username):
         title="Gruppenmitglied entfernen?",
         question=f"Soll der Nutzer <strong>{user}</strong> aus der Gruppe {group} entfernt werden?",
         yes="Ja, Mitglied entfernen",
+        next=reverse('account:group', args=[group])
+    ))
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def group_manager_add(request, group, username):
+    group_url = reverse('account:group', args=[group])
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+
+    user = __resolve_user(username)
+    if not user:
+        messages.add_message(request, messages.ERROR,
+                             f"Nutzer '{username}' nicht gefunden!")
+        return HttpResponseRedirect(group_url)
+
+
+    if not __user_in_group(user, group):
+        messages.add_message(request, messages.INFO,
+                             f"Nutzer {user} ist nicht in der Gruppe!")
+        return HttpResponseRedirect(group_url)
+
+    if request.method == 'POST':
+        LDAP().group_member_change(group.name, user.username, mode="add",field='owner')
+        messages.add_message(request, messages.SUCCESS,
+                             f"Nutzer {user.username} ist jetzt Manager.")
+
+        return HttpResponseRedirect(request.POST['next'])
+
+    return render(request, 'account/confirm.html', dict(
+        title="Gruppenmanager hinzufügen",
+        question=f"Willst du den Nutzer <strong>{user}</strong> zum Manager der Gruppe <strong>{group}</strong> machen?",
+        yes="Ja, Zum Manager ernennen!",
+        next=reverse('account:group', args=[group])
+    ))
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def group_manager_remove(request, group, username):
+    group_url = reverse('account:group', args=[group])
+    group = __resolve_group(request, group)
+    if isinstance(group, HttpResponse):
+        return group
+
+    user = __resolve_user(username)
+    if not user:
+        messages.add_message(request, messages.ERROR,
+                             f"Nutzer '{username}' nicht gefunden!")
+        return HttpResponseRedirect(group_url)
+
+
+    if not __user_in_group(user, group):
+        messages.add_message(request, messages.INFO,
+                             f"Nutzer {user} ist nicht in der Gruppe!")
+        return HttpResponseRedirect(group_url)
+
+    if request.method == 'POST':
+        LDAP().group_member_change(group.name, user.username, mode="remove",field='owner')
+        messages.add_message(request, messages.SUCCESS,
+                             f"Nutzer {user.username} ist nicht länger Manager.")
+
+        return HttpResponseRedirect(request.POST['next'])
+
+    return render(request, 'account/confirm.html', dict(
+        title="Gruppenmanager entfernen",
+        question=f"Willst du den Nutzer <strong>{user}</strong> die Managerrechte der Gruppe <strong>{group}</strong> entziehen?",
+        yes="Ja, Rechte entziehen!",
         next=reverse('account:group', args=[group])
     ))
 

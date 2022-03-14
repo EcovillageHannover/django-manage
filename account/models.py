@@ -237,19 +237,19 @@ class LDAP:
         if len(ret) == 1:
             return self.__from_user(ret[0][1])
 
-    def group_member_change(self, group, username, mode="add"):
+    def group_member_change(self, group, username, mode="add", field='member'):
         group_dn = f"cn={group},{settings.AUTH_LDAP_GROUP_DN}"
         user_dn = f"cn={username},{settings.AUTH_LDAP_USER_DN}"
         if mode == "add":
-            modlist = [(ldap.MOD_ADD, 'member', [user_dn.encode()])]
+            modlist = [(ldap.MOD_ADD, field, [user_dn.encode()])]
         elif mode == "remove":
-            modlist = [(ldap.MOD_DELETE, 'member', [user_dn.encode()])]
+            modlist = [(ldap.MOD_DELETE, field, [user_dn.encode()])]
         else:
             raise RuntimeError(f"Invalid mode: {mode}")
 
         try:
             self.conn.modify_s(group_dn, modlist)
-            logger.info(f"{mode}: user {username} in group {group} ")
+            logger.info(f"{mode}: user {username} in group {group} ({field})")
             return True
         except Exception as e:
             logger.error(f"Could not {mode} user {username} in group {group}: {e}")
