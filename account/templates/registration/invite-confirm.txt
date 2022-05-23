@@ -1,0 +1,24 @@
+Hallo!
+
+Dies ist eine automatisierte Bestätigung einer Einladung zum EVH Account:
+
+  Eingeladener: {{vorname}} {{nachname}} <{{email}}>
+  Gruppe        {{group}}
+  Einlader:     {{inviter}}
+
+-- 
+EVH Support
+_____________________________________________
+
+ecovillage hannover eG
+Sitz: Davenstedter Str. 200, 30455 Hannover
+Registergericht: Hannover, GnR 200048
+
+Vorstandssprecher: Gerd Nord
+Vorstand: Ingo Bartens, Elvira Hendricks,
+Uwe Bartkus, Christine Widdel-Abban
+
+Aufsichtsratsvorsitz: Hans Mönninghoff
+Stellvertretender Aufsichtsratsvorsitz:
+Brigitte Offermann-Hülse
+_____________________________________________

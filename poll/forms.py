@@ -72,7 +72,7 @@ class PollForm(forms.ModelForm):
                 choice = (item.id, item.value)
 
                 # Some Choices are already full
-                if item.max_votes >= 0:
+                if (item.max_votes or -1) >= 0:
                     votes  = Vote.objects.filter(poll=self.instance, item=item)
                     users = [v.user for v in votes]
                     choice = (item.id, item.value + " (Plätze: %d/%d)" % (len(votes), item.max_votes))

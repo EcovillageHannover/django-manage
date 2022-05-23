@@ -79,6 +79,8 @@ class Command(BaseCommand):
             else:
                 username = make_username(g['Vorname'].strip(), g['Familienname'].strip())
 
+            if "," in g['Familienname']:
+                g['Familienname'] = g['Familienname'].split(",")[0]
 
             try: # 1. Try: by username
                 user = UserModel.objects.get(username=username)

@@ -10,6 +10,7 @@ from django.shortcuts import render
 from django.template import loader
 from django.contrib import messages
 from django.core.mail import send_mail
+from django.utils import timezone
 import ldap
 import ldap.modlist
 import passlib.pwd
@@ -502,6 +503,13 @@ def group_member_remove(request, group, username):
     ))
 
 
+def mark_group_for_update(group):
+    # Mark all Parents for sync
+    for g in [group] + group.groupprofile.all_parents:
+        g.groupprofile.updated_at = timezone.now()
+        g.groupprofile.save()
+
+
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def group_manager_add(request, group, username):
@@ -524,6 +532,7 @@ def group_manager_add(request, group, username):
 
     if request.method == 'POST':
         LDAP().group_member_change(group.name, user.username, mode="add",field='owner')
+        mark_group_for_update(group)
         messages.add_message(request, messages.SUCCESS,
                              f"Nutzer {user.username} ist jetzt Manager.")
 
@@ -558,6 +567,7 @@ def group_manager_remove(request, group, username):
 
     if request.method == 'POST':
         LDAP().group_member_change(group.name, user.username, mode="remove",field='owner')
+        mark_group_for_update(group)
         messages.add_message(request, messages.SUCCESS,
                              f"Nutzer {user.username} ist nicht länger Manager.")
 

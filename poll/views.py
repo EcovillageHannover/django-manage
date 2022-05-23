@@ -169,7 +169,7 @@ def export_raw(request, poll_id):
         content_type="text/csv",
         status=200)
     response['Content-Disposition'] = f'attachment; filename="poll_{poll_id}.csv'
-    out = csv.writer(response)
+    out = csv.writer(response, quotechar='"', escapechar='\\', delimiter=";")
     header = ["PollID", "Frage", "Abstimmungszeitpunkt"]
     if can_export:
         header += ["EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail"]
@@ -217,7 +217,7 @@ def export_raw(request, poll_id):
             #logger.info("%s", votes)
             row += [votes[0].item.export_key or votes[0].item.value]
         elif poll.poll_type == Poll.TEXT:
-            row += [votes[0].text]
+            row += [votes[0].text.replace(";", " ")]
         elif poll.poll_type in (Poll.CHECKBOX, ):
             items = set([v.item for v in votes])
             row += [("1" if i in items else "")  for i in poll.items]
@@ -280,7 +280,7 @@ def export_pc_raw(request, poll_collection_id):
                 assert len(set([v.item for v in poll_votes])) == 1, poll_votes
                 row[poll_key] = (poll_votes[0].item.export_key or poll_votes[0].item.value)
             elif poll.poll_type == Poll.TEXT:
-                row[poll_key] = poll_votes[0].text.replace("\n", "|").replace("\r", "")
+                row[poll_key] = poll_votes[0].text.replace("\n", "|").replace("\r", "").replace(";", " ")
             elif poll.poll_type in (Poll.CHECKBOX, ):
                 for v in poll_votes:
                     key = v.item.export_key or v.item.value
@@ -293,7 +293,7 @@ def export_pc_raw(request, poll_collection_id):
             if f not in header:
                 header.append(f)
 
-    out = csv.DictWriter(response, header, quotechar='"', escapechar='\\')
+    out = csv.DictWriter(response, header, quotechar='"', escapechar='\\', delimiter=";")
     out.writeheader()
     out.writerows(data.values())
 
@@ -314,7 +314,7 @@ def export_voters(request, poll_collection_id):
         content_type="text/html",
         status=200)
     response['Content-Disposition'] = f'attachment; filename="poll_collection_{poll_collection_id}.csv'
-    out = csv.writer(response)
+    out = csv.writer(response, quotechar='"', escapechar='\\', delimiter=";")
 
     header = ["EVH Mitgliedsnummer", "Vorname", "Familienname", "E-Mail"]
     out.writerow(header)
