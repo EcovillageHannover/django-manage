@@ -74,8 +74,10 @@
 
  <div class="container">
    <h1>{% block title %}(no title){% endblock %}</h1>
-   
+
+   <div class="alerts-container container">
    {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
+   </div>
 
    {% block content %}(no content){% endblock %}
  </div>

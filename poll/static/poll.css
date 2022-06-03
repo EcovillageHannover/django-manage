@@ -1,0 +1,28 @@
+.poll-result .total_votes {
+    float: right;
+    padding-top: 10px;
+}
+
+.poll-result ul li {
+    margin: 10px 0;
+}
+
+.progress-bar {
+    overflow: visible;
+    color: #000;
+}
+
+.alerts-container {
+    position: fixed;
+    bottom: 0;
+    opacity: 85%;
+    z-index: 100;
+    margin-left: -15px;
+    width: calc(100% + 30px);
+    padding-right: 0;
+    padding-left: 0;
+}
+
+.alerts-container:hover {
+    opacity: 100%;
+}

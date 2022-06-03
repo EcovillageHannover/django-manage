@@ -41,6 +41,28 @@ async function updatePollSummary(formContainer, pollResults) {
     })
 }
 
+async function showAlert(message, extraClasses) {
+    let container = document.querySelector(".alerts-container");
+
+    let alert = document.createElement("div");
+    alert.classList.add("alert", "alert-dismissable", "fade", "show", ...extraClasses);
+    alert.innerText = message;
+
+    let btn = document.createElement("button");
+    btn.classList.add("close");
+    btn.setAttribute("data-dismiss", "alert");
+    btn.setAttribute("aria-label", "close");
+    btn.innerText = "x";
+
+    alert.appendChild(btn);
+    //container.appendChild(alert);
+    container.insertBefore(alert, container.firstChild);
+    $(alert).alert();
+    setTimeout(() => {
+        $(alert).alert('close');
+    }, 10000);
+}
+
 async function submitForm(e) {
     e.preventDefault();
     let form = e.target;
@@ -54,11 +76,11 @@ async function submitForm(e) {
             data[key] = formData.get(key);
     }
     let dataJson = JSON.stringify(data);
-    console.log("Form submitted:", dataJson);
 
-    form.querySelectorAll("input[type=submit]").forEach((btn) => {
-        btn.setAttribute('data-text', btn.getAttribute('value'));
-        btn.setAttribute("value", "sending...");
+    form.querySelectorAll("button[type=submit]").forEach((btn) => {
+        btn.setAttribute('data-text', btn.innerText);
+        btn.innerText =". . .";
+        btn.setAttribute("disabled", "disabled");
     });
 
     let response = await fetch(form.action, {
@@ -82,18 +104,22 @@ async function submitForm(e) {
     }
 
     if (response.ok && responseData !== null) {
-        console.log("Data submitted successfully.");
         let formId = form.getAttribute("data-form-id");
         await updatePollSummary(
             document.getElementById(`form-container-${formId}`),
             responseData["pollResults"]
         );
+        console.log("Data submitted successfully.");
+        await showAlert("Data submitted successfully.", ["alert-success"]);
     } else {
-        console.log("Failed to submit data:", responseData?.error ?? "unexpected error");
+        let msg = `Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`;
+        console.warn(msg);
+        await showAlert(msg, ["alert-danger"]);
     }
 
-    form.querySelectorAll("input[type=submit]").forEach((btn) => {
-        btn.setAttribute('value', btn.getAttribute('data-text'));
+    form.querySelectorAll("button[type=submit]").forEach((btn) => {
+        btn.innerText = btn.getAttribute('data-text');
+        btn.removeAttribute("disabled");
     });
 
 }

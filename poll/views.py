@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import itertools
+import time
+
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpRequest
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -171,8 +173,6 @@ def api_vote(request, poll_id: int):
         }), **r_args)
     else:
         logging.info("%s", form.errors)
-        messages.add_message(request, messages.ERROR,
-                             f"Deine Wahl konnte nicht gespeichert werden!")
         return HttpResponse(json.dumps({'error': f'Deine Wahl für \'{poll}\' konnte nicht gespeichert werden!'}),
                             status=500,
                             **r_args)
