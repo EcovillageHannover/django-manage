@@ -36,9 +36,6 @@ async function updatePollSummary(formContainer, pollResults) {
         progBar.setAttribute("aria-valuenow", optionPercentage.toString());
         progBar.style.width = `${optionPercentage}%`;
     });
-    pollResults["options"].forEach(({value: oValue, count: oCount}) => {
-
-    })
 }
 
 async function showAlert(message, extraClasses) {
@@ -110,11 +107,11 @@ async function submitForm(e) {
             responseData["pollResults"]
         );
         console.log("Data submitted successfully.");
-        await showAlert("Data submitted successfully.", ["alert-success"]);
+        await showAlert(responseData?.message ?? "Deine Stimme wurde gespeichert.", ["alert-success"]);
     } else {
-        let msg = `Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`;
-        console.warn(msg);
-        await showAlert(msg, ["alert-danger"]);
+        console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
+        await showAlert(`Beim Speichern deiner Stimme trat ein Fehler auf! `
+            + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
     }
 
     form.querySelectorAll("button[type=submit]").forEach((btn) => {
