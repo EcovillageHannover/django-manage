@@ -116,9 +116,10 @@
           </div>
           {% endif %}
       </div>
-      <div class="row">
+      <div class="row" id="form-container-{{ form.instance.pk }}">
         <div class="{% if form.show_results  %}col-md-7{% else %}col-md-12{% endif %}">
-          <form method="POST" action="{% url 'poll:vote' form.instance.pk %}">
+          <form method="POST" action="{% url 'poll:api_vote' form.instance.pk %}"
+                data-form-type="{{ form.instance.poll_type }}" data-form-id="{{ form.instance.pk }}" class="poll-form">
             {% csrf_token %}
             {% bootstrap_form form layout='inline' %}
             {% if can_vote and poll_collection.is_active and form.instance.is_published  and not print_mode %}
@@ -132,12 +133,15 @@
           {% if not form.instance.is_text %}
           <ul>
             {% for item, value, percent in form.instance.results %}
-            <li class="overflow-auto">• {{ item.value }}
+            <li class="overflow-auto">• <span class="option-value">{{ item.value }}</span>
               {% if not form.instance.is_prio  and not form.instance.is_yes_no_none %}
-              <span class="float-right"><em>({{item.vote_count}} Stimmen)</em></span><br/>
+              <span class="float-right"><em>(<span class="option-vote-count">{{item.vote_count}}</span> Stimmen)</em></span><br/>
               {% endif %}
               {% if form.instance.is_yes_no_none %}<br/>
-                <span class="float-right"><em>({{value}}, Stimmen: {{item.vote_count}})</em></span><br/>{% endif %}
+                <span class="float-right"><em>
+                  (<span class="option-details">{{value}}</span>,
+                  Stimmen: <span class="option-vote-count">{{item.vote_count}})</span>
+                </em></span><br/>{% endif %}
                 {% if form.instance.show_percent %}
                   <div class="progress mb-2">
                     <div class="progress-bar bg-info" style="width: {{percent}}%" role="progressbar"  aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100">
@@ -153,7 +157,7 @@
               {% endfor %}
               </ul>
           {% endif %}
-          <div class="total_votes">Stimmen: <b>{{ form.instance.vote_count }}</b></div><br>
+          <div>Stimmen: <b class="total-vote-count">{{ form.instance.vote_count }}</b></div><br>
         </div>
         {% endif %}
         {% if can_analyze and form.instance.is_text %}
@@ -185,7 +189,9 @@
   
   {% endblock %}
 
-  
+{% block javascript %}
+<script type="application/javascript" src="/static/poll.js"></script>
+{% endblock %}
 
 {% block css %}
   <style type="text/css">

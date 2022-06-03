@@ -9,9 +9,11 @@ from guardian.shortcuts import (get_group_perms, get_groups_with_perms, get_perm
                                 get_users_with_perms, get_objects_for_user, assign_perm, remove_perm)
 
 import logging
-logger = logging.getLogger(__name__)
 
 from .models import PollCollection, Poll, Item, Vote
+
+logger = logging.getLogger(__name__)
+
 
 class ExtendedGuardedModelAdmin(GuardedModelAdmin):
     def get_model_objs(self, request, action=None, klass=None):

@@ -24,6 +24,7 @@ class DisableRadioSelect(forms.RadioSelect):
 
         return option
 
+
 class PollForm(forms.ModelForm):
     class Meta:
         model = Poll
@@ -104,7 +105,7 @@ class PollForm(forms.ModelForm):
         return any([v.user == self.user for v in self.votes])
 
     @property
-    def show_results(self):
+    def show_results(self) -> bool:
         pc = self.instance.poll_collection
         normal_view = pc.can_analyze(self.user) \
             and (self.user_voted or (not pc.is_active))
@@ -128,7 +129,6 @@ class PollForm(forms.ModelForm):
     def save(self, user):
         old_votes = Vote.objects.filter(user=user, poll=self.instance)
         old_votes.delete()
-
 
         if 'text' in self.cleaned_data:
             vote = Vote.objects.create(user=user,

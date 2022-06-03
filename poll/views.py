@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import itertools
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpRequest
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -9,6 +9,7 @@ from .utils import set_cookie
 from zlib import crc32
 from collections import defaultdict
 import csv
+import json
 import logging
 logger = logging.getLogger("poll")
 import io
@@ -94,7 +95,6 @@ def poll_collection_view(request, poll_collection_id):
             else:
                 continue
 
-
         poll_forms.append(form)
 
     tags = list(sorted(available_tags)) + ["Unbeantwortet"]
@@ -120,35 +120,62 @@ def poll_collection_view(request, poll_collection_id):
 
 
 @login_required
-def vote(request, poll_id):
+def api_vote(request, poll_id: int):
+    r_args = {'content_type': 'application/json'}
     try:
         poll = Poll.objects.get(pk=poll_id)
     except Poll.DoesNotExist:
-        return HttpResponse('Wrong parameters', status=400)
+        return HttpResponse(json.dumps({'error': 'No such poll'}), status=404, **r_args)
 
     if not poll.poll_collection.can_vote(request.user):
-        return HttpResponse('NotFound', status=404)
+        return HttpResponse(json.dumps({'error': 'You are not authorized to vote on this poll'}), status=403, **r_args)
+
+    if not request.method == 'POST':
+        return HttpResponse(json.dumps({'error': 'Invalid request!'}), status=400, **r_args)
 
     if not poll.poll_collection.is_active:
+        return HttpResponse(
+            json.dumps({
+                'error': 'Die Umfrage ist beendet. Entscheidungen können nicht mehr verändert werden.'
+            }),
+            status=400,
+            **r_args)
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    form = PollForm(request_data, instance=poll, user=request.user)
+    if form.is_valid():
+        form.save(request.user)
+        results = {'totalVotes': form.instance.vote_count, 'options': [], 'type': form.instance.poll_type}
+        if form.show_results and not form.instance.is_text:
+            item: Item
+            for (item, val, _) in form.instance.results:
+                option = {
+                    'value': item.value,
+                    'count': val if form.instance.is_prio else item.vote_count
+                }
+                if form.instance.poll_type == Poll.YESNONONE:
+                    count = [0, 0, 0]
+                    for v in form.instance.votes:
+                        i = 2
+                        if v.text == 'ja':
+                            i = 0
+                        if v.text == 'nein':
+                            i = 1
+                        count[i] = count[i] + 1
+                    option['count'] = count
+                results['options'].append(option)
+        return HttpResponse(json.dumps({
+            'message': f'Deine Stimme für \'{poll}\' wurde gespeichert.',
+            'pollResults': results
+        }), **r_args)
+    else:
+        logging.info("%s", form.errors)
         messages.add_message(request, messages.ERROR,
-           "Die Umfrage ist beendet. Entscheidungen können nicht mehr verändert werden.")
-        return HttpResponseRedirect(request.POST['next'])
-
-    if request.method == 'POST':
-        form = PollForm(request.POST,instance=poll)
-        if form.is_valid():
-            form.save(request.user)
-            messages.add_message(request, messages.SUCCESS,
-                                 f"Deine Stimme für '{poll}' wurde gespeichert.")
-
-            return HttpResponseRedirect(request.POST['next'])
-        else:
-            logging.info("%s", form.errors)
-            messages.add_message(request, messages.ERROR,
-                                 f"Deine Wahl konnte nicht gespeichert werden!")
-            return HttpResponseRedirect(request.POST['next'])
-
-    return HttpResponse(status=400)
+                             f"Deine Wahl konnte nicht gespeichert werden!")
+        return HttpResponse(json.dumps({'error': f'Deine Wahl für \'{poll}\' konnte nicht gespeichert werden!'}),
+                            status=500,
+                            **r_args)
 
 
 @login_required
