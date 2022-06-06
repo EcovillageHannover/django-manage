@@ -87,7 +87,7 @@
 {% endif %}
 
 {% for form in poll_forms %}
-  <div class="card card-light-bg mb-3" style="break-inside: avoid;">
+  <div class="question-card card card-light-bg mb-3 border" style="break-inside: avoid;">
     <h3 id="poll{{form.instance.id}}" class="card-header">
       {{form.instance.number}}. {{form.instance.question}}
       {% if not print_mode %}

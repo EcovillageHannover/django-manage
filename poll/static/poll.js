@@ -66,6 +66,14 @@ async function showAlert(message, extraClasses) {
     }, 10000);
 }
 
+function findParent(el, classList) {
+    while (el !== null && !classList.every(cls => el.classList.contains(cls))) {
+        el = el.parentNode;
+    }
+
+    return el;
+}
+
 async function submitForm(e) {
     e.preventDefault();
     let form = e.target;
@@ -114,10 +122,18 @@ async function submitForm(e) {
         );
         console.log("Data submitted successfully.");
         await showAlert(responseData?.message ?? "Deine Stimme wurde gespeichert.", ["alert-success"]);
+        findParent(form, ['question-card']).classList.remove("border-danger");
+        findParent(form, ['question-card']).classList.add("border-success");
+        form.querySelector("button[type=submit]").classList.remove("btn-info", "btn-danger");
+        form.querySelector("button[type=submit]").classList.add("btn-success");
     } else {
         console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
         await showAlert(`Beim Speichern deiner Stimme trat ein Fehler auf! `
             + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
+        findParent(form, ['question-card']).classList.remove("border-success");
+        findParent(form, ['question-card']).classList.add("border-danger");
+        form.querySelector("button[type=submit]").classList.remove("btn-info", "btn-success");
+        form.querySelector("button[type=submit]").classList.add("btn-danger");
     }
 
     form.querySelectorAll("button[type=submit]").forEach((btn) => {
