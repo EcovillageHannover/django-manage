@@ -124,13 +124,13 @@ def poll_collection_view(request, poll_collection_id):
 @login_required
 def api_vote(request, poll_id: int):
     r_args = {'content_type': 'application/json'}
+
+    if request.method not in ('DELETE', 'POST'):
+        return HttpResponse(json.dumps({'error': 'Method not allowed!'}), status=405, **r_args)
     try:
         poll = Poll.objects.get(pk=poll_id)
     except Poll.DoesNotExist:
         return HttpResponse(json.dumps({'error': 'No such poll'}), status=404, **r_args)
-
-    if not poll.poll_collection.can_vote(request.user):
-        return HttpResponse(json.dumps({'error': 'You are not authorized to vote on this poll'}), status=403, **r_args)
 
     if not poll.poll_collection.is_active:
         return HttpResponse(
@@ -140,21 +140,36 @@ def api_vote(request, poll_id: int):
             status=400,
             **r_args)
 
+    if not poll.poll_collection.can_vote(request.user):
+        return HttpResponse(json.dumps({'error': 'You are not authorized to vote on this poll'}), status=403, **r_args)
+
+    if request.method == 'DELETE':
+        return api_vote_delete(request, poll)
+    elif request.method == 'POST':
+        return api_vote_update(request, poll)
+
+
+def api_vote_delete(request, poll: Poll):
+    r_args = {'content_type': 'application/json'}
+
     request_data = {} if request.method == 'DELETE' else json.loads(request.body.decode('utf-8'))
     form = PollForm(request_data, instance=poll, user=request.user)
 
-    if request.method == 'DELETE':
-        vote: Vote = Vote.objects \
-            .filter(poll=poll, user=request.user)
-        vote.delete()
+    vote: Vote = Vote.objects \
+        .filter(poll=poll, user=request.user)
+    vote.delete()
 
-        return HttpResponse(json.dumps({
-            'message': f'Deine Stimme für \'{poll}\' wurde gelöscht.',
-            'pollResults': poll.get_result_data(form.show_results)
-        }))
+    return HttpResponse(json.dumps({
+        'message': f'Deine Stimme für \'{poll}\' wurde gelöscht.',
+        'pollResults': poll.get_result_data(form.show_results)
+    }))
 
-    elif not request.method == 'POST':
-        return HttpResponse(json.dumps({'error': 'Invalid request!'}), status=400, **r_args)
+
+def api_vote_update(request, poll: Poll):
+    r_args = {'content_type': 'application/json'}
+
+    request_data = {} if request.method == 'DELETE' else json.loads(request.body.decode('utf-8'))
+    form = PollForm(request_data, instance=poll, user=request.user)
 
     if form.is_valid():
         form.save(request.user)
@@ -167,7 +182,6 @@ def api_vote(request, poll_id: int):
         return HttpResponse(json.dumps({'error': f'Deine Wahl für \'{poll}\' konnte nicht gespeichert werden!'}),
                             status=500,
                             **r_args)
-
 
 @login_required
 def export_raw(request, poll_id):
