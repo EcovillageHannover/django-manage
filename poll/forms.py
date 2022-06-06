@@ -101,6 +101,13 @@ class PollForm(forms.ModelForm):
                 self.initial['choices'] = [v.item.pk for v in self.votes]
 
     @property
+    def tags(self):
+        tags = list(self.instance.tags.names())
+        if not self.user_voted:
+            tags.append("Unbeantwortet")
+        return tags
+
+    @property
     def user_voted(self):
         return any([v.user == self.user for v in self.votes])
 

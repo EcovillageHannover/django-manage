@@ -80,12 +80,8 @@ def poll_collection_view(request, poll_collection_id):
 
         form = PollForm(instance=p, user=request.user)
 
-        if search_tag:
-            if search_tag == 'Unbeantwortet':
-                if form.user_voted:
-                    continue
-            elif search_tag not in p.tags.names():
-                continue
+        if search_tag and search_tag not in form.tags:
+            continue
 
         if search_p and int(search_p) != p.pk:
             continue
