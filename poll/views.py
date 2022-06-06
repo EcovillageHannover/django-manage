@@ -132,6 +132,9 @@ def api_vote(request, poll_id: int):
     except Poll.DoesNotExist:
         return HttpResponse(json.dumps({'error': 'No such poll'}), status=404, **r_args)
 
+    if not poll.poll_collection.can_vote(request.user):
+        return HttpResponse(json.dumps({'error': 'You are not authorized to vote on this poll'}), status=403, **r_args)
+
     if not poll.poll_collection.is_active:
         return HttpResponse(
             json.dumps({
@@ -139,9 +142,6 @@ def api_vote(request, poll_id: int):
             }),
             status=400,
             **r_args)
-
-    if not poll.poll_collection.can_vote(request.user):
-        return HttpResponse(json.dumps({'error': 'You are not authorized to vote on this poll'}), status=403, **r_args)
 
     if request.method == 'DELETE':
         return api_vote_delete(request, poll)
@@ -152,8 +152,7 @@ def api_vote(request, poll_id: int):
 def api_vote_delete(request, poll: Poll):
     r_args = {'content_type': 'application/json'}
 
-    request_data = {} if request.method == 'DELETE' else json.loads(request.body.decode('utf-8'))
-    form = PollForm(request_data, instance=poll, user=request.user)
+    form = PollForm({}, instance=poll, user=request.user)
 
     vote: Vote = Vote.objects \
         .filter(poll=poll, user=request.user)
@@ -168,7 +167,7 @@ def api_vote_delete(request, poll: Poll):
 def api_vote_update(request, poll: Poll):
     r_args = {'content_type': 'application/json'}
 
-    request_data = {} if request.method == 'DELETE' else json.loads(request.body.decode('utf-8'))
+    request_data = json.loads(request.body.decode('utf-8'))
     form = PollForm(request_data, instance=poll, user=request.user)
 
     if form.is_valid():
