@@ -160,4 +160,4 @@ class PollForm(forms.ModelForm):
                 vote.save()
         else:
             raise RuntimeError("Unknown Voting")
-        
+
