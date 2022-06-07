@@ -1,5 +1,57 @@
 "use strict";
 
+/// utility functions ///
+
+function disableElement(el) {
+    el.setAttribute("disabled", "disabled");
+}
+
+function enableElement(el) {
+    el.removeAttribute("disabled");
+}
+
+function findParent(el, classList) {
+    while (el !== null && !classList.every(cls => el.classList.contains(cls))) {
+        el = el.parentNode;
+    }
+
+    return el;
+}
+
+function getFormData(form) {
+    let formData = new FormData(form);
+    let data = {};
+    for (let key of formData.keys()) {
+        let formType = form.getAttribute("data-form-type");
+        if (formType === "CE")
+            data[key] = formData.getAll(key);
+        else
+            data[key] = formData.get(key);
+    }
+    return data;
+}
+
+function setQuestionHighlight(questionCard, cardMode, buttonMode) {
+    let submitButtons = questionCard.querySelectorAll("button.submit-button");
+    setHighlightMode([questionCard], 'border', cardMode);
+    setHighlightMode(submitButtons, 'btn', buttonMode);
+}
+
+function setHighlightMode(elements, prefix, mode) {
+
+    let modes = ["info", "success", "danger"]
+
+    elements.forEach(btn => {
+        modes.forEach(m => {
+            btn.classList.remove(`${prefix}-${m}`);
+        });
+        if (mode !== null)
+            btn.classList.add(`${prefix}-${mode}`);
+    })
+}
+
+/// dom manipulation ///
+
 async function updatePollSummary(formContainer, pollResults) {
     let resultContainer = formContainer.querySelector(".poll-result");
 
@@ -72,208 +124,6 @@ function showAlert(message, extraClasses) {
     }, 10000);
 }
 
-function findParent(el, classList) {
-    while (el !== null && !classList.every(cls => el.classList.contains(cls))) {
-        el = el.parentNode;
-    }
-
-    return el;
-}
-
-async function submitForm(e) {
-    e.preventDefault();
-    let form = e.target;
-    let formData = new FormData(form);
-    let data = {};
-    for (let key of formData.keys()) {
-        let formType = form.getAttribute("data-form-type");
-        if (formType === "CE")
-            data[key] = formData.getAll(key);
-        else
-            data[key] = formData.get(key);
-    }
-    let dataJson = JSON.stringify(data);
-    let submitButtons = form.querySelectorAll("button.submit-button");
-
-    submitButtons.forEach((btn) => {
-        btn.setAttribute('data-text', btn.innerText);
-        btn.innerText =". . .";
-        btn.setAttribute("disabled", "disabled");
-    });
-
-    let response = await fetch(form.action, {
-        method: 'POST',
-        mode: 'same-origin',
-        cache: 'no-cache',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-        },
-        redirect: 'follow',
-        body: dataJson
-    })
-    let responseData;
-    try {
-        responseData = await response.json();
-    } catch (e) {
-        responseData = null;
-        console.warn("Did not receive a valid JSON response");
-    }
-
-    let questionCard = findParent(form, ['question-card']);
-    if (response.ok && responseData !== null) {
-        let formId = form.getAttribute("data-form-id");
-        await updatePollSummary(
-            document.getElementById(`form-container-${formId}`),
-            responseData["pollResults"]
-        );
-        console.log("Data submitted successfully.");
-        showAlert(responseData?.message ?? "Deine Stimme wurde gespeichert.", ["alert-success"]);
-        setHighlightMode([questionCard], 'border', 'success');
-        setHighlightMode(submitButtons, 'btn', 'success');
-        let badgeContainer = questionCard.querySelector(".poll-badges");
-        if (badgeContainer.querySelector(".success-badge") === null) {
-            let successBadge = document.createElement("span");
-            successBadge.classList.add("badge", "badge-info", "success-badge");
-            successBadge.innerText = "Abgestimmt";
-            badgeContainer.insertBefore(successBadge, badgeContainer.firstChild);
-        }
-
-        form.querySelectorAll("button.retract-button").forEach(btn => {
-            btn.removeAttribute("disabled");
-        });
-    } else {
-        console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
-        showAlert(`Beim Speichern deiner Stimme trat ein Fehler auf! `
-            + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
-        setHighlightMode([questionCard], 'border', 'danger');
-        setHighlightMode(submitButtons, 'btn', 'danger');
-    }
-
-    submitButtons.forEach((btn) => {
-        btn.innerText = btn.getAttribute('data-text');
-        btn.removeAttribute("disabled");
-    });
-
-}
-
-async function retractVote(e, form) {
-    if (e.target.hasAttribute("disabled"))
-        return;
-    e.preventDefault();
-    let formData = new FormData(form);
-    let response = await fetch(form.action, {
-        method: 'DELETE',
-        mode: 'same-origin',
-        cache: 'no-cache',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-        },
-        redirect: 'follow',
-    })
-    let responseData;
-    try {
-        responseData = await response.json();
-    } catch (e) {
-        responseData = null;
-        console.warn("Did not receive a valid JSON response");
-    }
-    let questionCard = findParent(form, ['question-card']);
-    let submitButtons = form.querySelectorAll("button.submit-button");
-    let retractButtons = form.querySelectorAll("button.retract-button");
-
-    if (response.ok && responseData !== null) {
-        let formId = form.getAttribute("data-form-id");
-        await updatePollSummary(
-            document.getElementById(`form-container-${formId}`),
-            responseData["pollResults"]
-        );
-        console.log("Data submitted successfully.");
-        form.reset();
-        showAlert(responseData?.message ?? "Deine Stimme wurde gelöscht.", ["alert-success"]);
-        setHighlightMode([questionCard], 'border', null);
-        setHighlightMode(submitButtons, 'btn', 'info');
-        retractButtons.forEach(btn => {
-           btn.setAttribute("disabled", "disabled");
-        });
-        let badge = questionCard.querySelector(".poll-badges .success-badge");
-        if (badge !== null) {
-            badge.parentNode.removeChild(badge);
-        }
-    } else {
-        console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
-        showAlert(`Beim Löschen deiner Stimme trat ein Fehler auf! `
-            + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
-        setHighlightMode([questionCard], 'border', 'danger');
-        setHighlightMode(submitButtons, 'btn', 'danger');
-    }
-}
-
-function setHighlightMode(elements, prefix, mode) {
-
-    let modes = ["info", "success", "danger"]
-
-    elements.forEach(btn => {
-        modes.forEach(m => {
-            btn.classList.remove(`${prefix}-${m}`);
-        });
-        if (mode !== null)
-            btn.classList.add(`${prefix}-${mode}`);
-    })
-}
-
-function toggleTagFilter(event, tag) {
-    event.preventDefault();
-
-    if (tagFilters.includes(tag))
-        tagFilters.splice(tagFilters.indexOf(tag), 1);
-    else
-        tagFilters.push(tag);
-    applyFilters();
-}
-
-function clearFilters(event) {
-    event.preventDefault();
-
-    if (tagFilters.length !== 0 || filterQuery.length > 0 || filterIds.length !== 0) {
-        tagFilters = [];
-        filterQuery = "";
-        filterIds = [];
-        document.querySelector(".search-form").reset();
-        applyFilters();
-    }
-}
-
-function updateUrlSearchParams() {
-
-    let searchParams = new URLSearchParams(window.location.search);
-
-    let tagParams = searchParams.getAll("tag");
-    searchParams.delete("tag")
-    tagFilters.forEach(tag => {
-        if (!tagParams.includes(tag))
-            searchParams.append("tag", tag);
-    })
-
-    if (filterQuery.length === 0)
-        searchParams.delete("q")
-    else
-        searchParams.set("q", filterQuery);
-    if (filterIds.length === 0)
-        searchParams.delete("p")
-    else
-        filterIds.forEach(id => { searchParams.set("p", id); });
-
-    if (searchParams !== window.location.searchParams) {
-        let url = new URL(window.location.href);
-        url.search = searchParams;
-        window.history.pushState({}, "", url);
-    }
-}
-
 function applyFilters() {
 
     console.log("filterIds: ", filterIds);
@@ -331,6 +181,175 @@ function applyFilters() {
         .forEach(card => { card.style.removeProperty("display"); });
     questionsToHide
         .forEach(card => { card.style.display = "none"; });
+}
+
+/// api requests ///
+
+async function submitForm(e) {
+    e.preventDefault();
+
+    let form = e.target;
+    let questionCard = findParent(form, ['question-card']);
+    let submitButtons = form.querySelectorAll("button.submit-button");
+
+    let data = getFormData(form);
+    let dataJson = JSON.stringify(data);
+
+    submitButtons.forEach((btn) => {
+        btn.setAttribute('data-text', btn.innerText);
+        btn.innerText =". . .";
+        btn.setAttribute("disabled", "disabled");
+    });
+
+    let responseData;
+    let response;
+    try {
+        response = await fetch(form.action, {
+            method: 'POST',
+            mode: 'same-origin',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': data['csrfmiddlewaretoken']
+            },
+            redirect: 'follow',
+            body: dataJson
+        });
+        responseData = await response.json();
+    } catch (e) {
+        responseData = null;
+        console.warn("Did not receive a valid JSON response");
+    }
+
+    if (response.ok && responseData !== null) {
+        let formId = form.getAttribute("data-form-id");
+        await updatePollSummary(
+            document.getElementById(`form-container-${formId}`),
+            responseData["pollResults"]
+        );
+        console.log("Data submitted successfully.");
+        showAlert(responseData?.message ?? "Deine Stimme wurde gespeichert.", ["alert-success"]);
+        setQuestionHighlight(questionCard, 'success', 'success');
+        let badgeContainer = questionCard.querySelector(".poll-badges");
+        if (badgeContainer.querySelector(".success-badge") === null) {
+            let successBadge = document.createElement("span");
+            successBadge.classList.add("badge", "badge-info", "success-badge");
+            successBadge.innerText = "Abgestimmt";
+            badgeContainer.insertBefore(successBadge, badgeContainer.firstChild);
+        }
+
+        form.querySelectorAll("button.retract-button").forEach(enableElement);
+    } else {
+        console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
+        showAlert(`Beim Speichern deiner Stimme trat ein Fehler auf! `
+            + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
+        setQuestionHighlight(questionCard, 'danger', 'danger');
+    }
+
+    submitButtons.forEach((btn) => {
+        btn.innerText = btn.getAttribute('data-text');
+        btn.removeAttribute("disabled");
+    });
+
+}
+
+async function retractVote(e, form) {
+    if (e.target.hasAttribute("disabled"))
+        return;
+    e.preventDefault();
+    let data = getFormData(form);
+    let responseData;
+    let response;
+    try {
+        response = await fetch(form.action, {
+            method: 'DELETE',
+            mode: 'same-origin',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': data['csrfmiddlewaretoken']
+            },
+            redirect: 'follow',
+        });
+        responseData = await response.json();
+    } catch (e) {
+        responseData = null;
+        console.warn("Did not receive a valid JSON response");
+    }
+    let questionCard = findParent(form, ['question-card']);
+
+    if (response.ok && responseData !== null) {
+        let formId = form.getAttribute("data-form-id");
+        await updatePollSummary(
+            document.getElementById(`form-container-${formId}`),
+            responseData["pollResults"]
+        );
+        console.log("Data submitted successfully.");
+        form.reset();
+        showAlert(responseData?.message ?? "Deine Stimme wurde gelöscht.", ["alert-success"]);
+        setQuestionHighlight(questionCard, null, 'info');
+        form.querySelectorAll("button.retract-button").forEach(disableElement);
+        let badge = questionCard.querySelector(".poll-badges .success-badge");
+        badge?.parentNode.removeChild(badge);
+    } else {
+        console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
+        showAlert(`Beim Löschen deiner Stimme trat ein Fehler auf! `
+            + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
+        setQuestionHighlight(questionCard, 'danger', 'danger');
+    }
+}
+
+/// filter configuration ///
+
+function toggleTagFilter(event, tag) {
+    event.preventDefault();
+
+    if (tagFilters.includes(tag))
+        tagFilters.splice(tagFilters.indexOf(tag), 1);
+    else
+        tagFilters.push(tag);
+    applyFilters();
+}
+
+function clearFilters(event) {
+    event.preventDefault();
+
+    if (tagFilters.length !== 0 || filterQuery.length > 0 || filterIds.length !== 0) {
+        tagFilters = [];
+        filterQuery = "";
+        filterIds = [];
+        document.querySelector(".search-form").reset();
+        applyFilters();
+    }
+}
+
+function updateUrlSearchParams() {
+
+    let searchParams = new URLSearchParams(window.location.search);
+
+    let tagParams = searchParams.getAll("tag");
+    searchParams.delete("tag")
+    tagFilters.forEach(tag => {
+        if (!tagParams.includes(tag))
+            searchParams.append("tag", tag);
+    })
+
+    if (filterQuery.length === 0)
+        searchParams.delete("q")
+    else
+        searchParams.set("q", filterQuery);
+    if (filterIds.length === 0)
+        searchParams.delete("p")
+    else
+        filterIds.forEach(id => { searchParams.set("p", id); });
+
+    if (searchParams !== window.location.searchParams) {
+        let url = new URL(window.location.href);
+        url.search = searchParams;
+        window.history.pushState({}, "", url);
+    }
 }
 
 /// ENTRYPOINT ///
