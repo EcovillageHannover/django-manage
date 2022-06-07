@@ -1,6 +1,7 @@
 
 {% extends "base.html" %}
 
+{% load static %}
 {% load bootstrap4 %}
 {% load markdownify %}
 
@@ -49,7 +50,7 @@
   {% if not print_mode %}
   <p class="hide-in-iframe">
     <hr/>
-    <form class="hide-in-iframe" method="GET" action="{% url 'poll:view' poll_collection.pk %}">
+    <form class="hide-in-iframe search-form" method="GET" action="{% url 'poll:view' poll_collection.pk %}">
       <div class="row">
         <div class="col-sm-2">
           <strong>Schlagwörter-Filter:</strong>
@@ -58,20 +59,19 @@
           {% if available_tags %}
             {% for tag in available_tags%}
               {% if tag == search_tag %}
-                <a href="?q={{search_q}}" class="mb-2 btn btn-warning">{{tag}} (x)</a>
+                <a href="?q={{search_q}}" class="mb-2 btn btn-warning tag-filter-button" data-tag="{{tag}}">{{tag}} (x)</a>
               {% else %}
-                <a href="?q={{search_q}}&tag={{tag}}" class="mb-2 btn btn-secondary">{{tag}}</a>
+                <a href="?q={{search_q}}&tag={{tag}}" class="mb-2 btn btn-secondary tag-filter-button" data-tag="{{tag}}">{{tag}}</a>
               {% endif %}
             {% endfor %}
           {% endif %}
-          {% if search_p or search_q or search_tag%}
-            <a href="?search_p=" class="btn mb-2 btn-warning">Alle anzeigen</a>
-          {% endif %}
+          <a href="?search_p=" class="btn mb-2 btn-warning clear-filter-button"
+             {% if not search_p and not search_q and not search_tag %}style="display: none;"{% endif %}>Alle anzeigen</a>
         </div>
         <div class="col-sm-12 form-group row mt-4">
-          <label class="col-sm-2 col-form-label" for="q"><strong>Freitextsuche:</strong></label>
+          <label class="col-sm-2 col-form-label" for="filter-q"><strong>Freitextsuche:</strong></label>
           <div class="col-sm-8">
-            <input type="text" class="form-control mb-2 mr-sm-2" id="q" name="q" value="{{search_q}}"/>
+            <input type="text" class="form-control mb-2 mr-sm-2" id="filter-q" name="q" value="{{search_q}}"/>
           </div>
           <button type="submit" class="btn btn-primary">Los</button>
           <input type="hidden" name="tag" value="{{ search_tag }}"/>
@@ -87,14 +87,20 @@
 {% endif %}
 
 {% for form in poll_forms %}
-  <div class="card card-light-bg mb-3" style="break-inside: avoid;">
+  <div class="question-card card card-light-bg mb-3 border {% if form.user_voted %}border-success{% endif %}"
+       data-id="{{ form.instance.pk }}"
+       data-taglist="{{ form.tags|join:' ' }}"
+       data-description="{{ form.instance.description }}"
+       data-question="{{ form.instance.question }}"
+       data-dirty="false"
+       style="break-inside: avoid;">
     <h3 id="poll{{form.instance.id}}" class="card-header">
       {{form.instance.number}}. {{form.instance.question}}
       {% if not print_mode %}
         <a href="#poll{{form.instance.id}}">&#x1F517;</a>
-        <span class="float-right">
+        <span class="float-right poll-badges">
           {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
-          {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
+          {% if form.user_voted %}<span class="badge badge-info success-badge">Abgestimmt</span> {% endif %}
           {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
           {% if can_change or can_export %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">
             {% if can_export %}Export (komplett){% else %}Export (anonym){% endif %}
@@ -123,7 +129,12 @@
             {% csrf_token %}
             {% bootstrap_form form layout='inline' %}
             {% if can_vote and poll_collection.is_active and form.instance.is_published  and not print_mode %}
-              {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-info" %}
+            {% if form.user_voted %}
+              {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-success submit-button" %}
+            {% else %}
+              {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-info" extra_classes="submit-button" %}
+            {% endif %}
+            {% bootstrap_button "Stimme zurückziehen" button_type="reset" button_class="btn-warning" extra_classes="retract-button" %}
             {% endif %}
             <input type="hidden" name="next" value="{{ next }}?last_voted={{form.instance.id}}&tag={{search_tag}}&q={{search_q}}#poll{{form.instance.id}}" />
           </form>
@@ -190,9 +201,9 @@
   {% endblock %}
 
 {% block javascript %}
-<script type="application/javascript" src="/static/poll.js"></script>
+<script type="application/javascript" src="{% static 'poll.js' %}"></script>
 {% endblock %}
 
 {% block css %}
-  <link rel="stylesheet" href="/static/poll.css"/>
+  <link rel="stylesheet" href="{% static 'poll.css' %}"/>
 {% endblock %}
