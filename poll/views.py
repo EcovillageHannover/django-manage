@@ -58,11 +58,6 @@ def poll_collection_view(request, poll_collection_id):
     for p in Poll.objects.filter(poll_collection=pc):
         available_tags.update(p.tags.names())
 
-    if set(terms) & available_tags:
-        search_tag = list(set(terms) & available_tags)[0]
-        terms.remove(search_tag)
-        search_q = " ".join(terms)
-
     poll_forms = []
     number = 1
     for p in Poll.objects.filter(poll_collection=pc).order_by('is_published', 'position', 'id'):
@@ -79,19 +74,6 @@ def poll_collection_view(request, poll_collection_id):
                 continue
 
         form = PollForm(instance=p, user=request.user)
-
-        if search_tag and search_tag not in form.tags:
-            continue
-
-        if search_p and int(search_p) != p.pk:
-            continue
-
-        if search_q:
-            for term in terms:
-                if term in (p.question + p.description):
-                    break
-            else:
-                continue
 
         poll_forms.append(form)
 

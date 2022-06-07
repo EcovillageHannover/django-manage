@@ -88,6 +88,7 @@
 
 {% for form in poll_forms %}
   <div class="question-card card card-light-bg mb-3 border {% if form.user_voted %}border-success{% endif %}"
+       data-id="{{ form.instance.pk }}"
        data-taglist="{{ form.tags|join:' ' }}"
        data-description="{{ form.instance.description }}"
        data-question="{{ form.instance.question }}"

@@ -50,7 +50,7 @@ async function updatePollSummary(formContainer, pollResults) {
     });
 }
 
-async function showAlert(message, extraClasses) {
+function showAlert(message, extraClasses) {
     let container = document.querySelector(".alerts-container");
 
     let alert = document.createElement("div");
@@ -129,7 +129,7 @@ async function submitForm(e) {
             responseData["pollResults"]
         );
         console.log("Data submitted successfully.");
-        await showAlert(responseData?.message ?? "Deine Stimme wurde gespeichert.", ["alert-success"]);
+        showAlert(responseData?.message ?? "Deine Stimme wurde gespeichert.", ["alert-success"]);
         setHighlightMode([questionCard], 'border', 'success');
         setHighlightMode(submitButtons, 'btn', 'success');
         let badgeContainer = questionCard.querySelector(".poll-badges");
@@ -145,7 +145,7 @@ async function submitForm(e) {
         });
     } else {
         console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
-        await showAlert(`Beim Speichern deiner Stimme trat ein Fehler auf! `
+        showAlert(`Beim Speichern deiner Stimme trat ein Fehler auf! `
             + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
         setHighlightMode([questionCard], 'border', 'danger');
         setHighlightMode(submitButtons, 'btn', 'danger');
@@ -193,7 +193,7 @@ async function retractVote(e, form) {
         );
         console.log("Data submitted successfully.");
         form.reset();
-        await showAlert(responseData?.message ?? "Deine Stimme wurde gelöscht.", ["alert-success"]);
+        showAlert(responseData?.message ?? "Deine Stimme wurde gelöscht.", ["alert-success"]);
         setHighlightMode([questionCard], 'border', null);
         setHighlightMode(submitButtons, 'btn', 'info');
         retractButtons.forEach(btn => {
@@ -205,7 +205,7 @@ async function retractVote(e, form) {
         }
     } else {
         console.warn(`Failed to submit data! Reason: ${responseData?.error ?? "unexpected error"}`);
-        await showAlert(`Beim Löschen deiner Stimme trat ein Fehler auf! `
+        showAlert(`Beim Löschen deiner Stimme trat ein Fehler auf! `
             + `Grund: ${responseData?.error ?? "unexpected error"}`, ["alert-danger"]);
         setHighlightMode([questionCard], 'border', 'danger');
         setHighlightMode(submitButtons, 'btn', 'danger');
@@ -235,12 +235,13 @@ function toggleTagFilter(event, tag) {
     applyFilters();
 }
 
-function clearFilters(event, tag) {
+function clearFilters(event) {
     event.preventDefault();
 
-    if (tagFilters.length !== 0 || filterQuery.length > 0) {
+    if (tagFilters.length !== 0 || filterQuery.length > 0 || filterIds.length !== 0) {
         tagFilters = [];
         filterQuery = "";
+        filterIds = [];
         document.querySelector(".search-form").reset();
         applyFilters();
     }
@@ -257,7 +258,14 @@ function updateUrlSearchParams() {
             searchParams.append("tag", tag);
     })
 
-    searchParams.set("q", filterQuery);
+    if (filterQuery.length === 0)
+        searchParams.delete("q")
+    else
+        searchParams.set("q", filterQuery);
+    if (filterIds.length === 0)
+        searchParams.delete("p")
+    else
+        filterIds.forEach(id => { searchParams.set("p", id); });
 
     if (searchParams !== window.location.searchParams) {
         let url = new URL(window.location.href);
@@ -267,6 +275,8 @@ function updateUrlSearchParams() {
 }
 
 function applyFilters() {
+
+    console.log("filterIds: ", filterIds);
 
     updateUrlSearchParams();
 
@@ -281,6 +291,9 @@ function applyFilters() {
             filterQuery.length === 0
             || filterWords.some(word => q.getAttribute("data-description")?.toLowerCase().indexOf(word.toLowerCase()) !== -1)
             || filterWords.some(word => q.getAttribute("data-question")?.toLowerCase().indexOf(word.toLowerCase()) !== -1)
+        ) && (
+            filterIds.length === 0
+            || filterIds.includes(parseInt(q.getAttribute("data-id")))
         )
     }
 
@@ -324,7 +337,17 @@ function applyFilters() {
 
 let urlParams = new URLSearchParams(window.location.search);
 let tagFilters = urlParams.getAll("tag");
-let filterQuery = urlParams.get("q") ?? "";
+let filterQuery = urlParams.get("q") ?? ""
+let filterIds = urlParams.getAll("p")
+    .map(s => {
+        try {
+            return parseInt(s)
+        } catch (e) {
+            showAlert("Ungültige ID in URL-Parameter 'p' (not a number)!", ["alert-warning"]);
+            return null;
+        }
+    })
+    .filter(i => i !== null);
 
 document.querySelectorAll("form.poll-form").forEach((form) => {
     form.addEventListener("submit", submitForm);
@@ -352,4 +375,7 @@ document.querySelector(".search-form").addEventListener("submit", (e) => {
     let data = new FormData(e.target);
     filterQuery = data.get("q");
     applyFilters();
-})
+});
+
+if (filterQuery.length !== 0 || tagFilters.length !== 0 || filterIds.length !== 0)
+    applyFilters();
