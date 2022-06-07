@@ -87,14 +87,14 @@
 {% endif %}
 
 {% for form in poll_forms %}
-  <div class="card card-light-bg mb-3" style="break-inside: avoid;">
+  <div class="question-card card card-light-bg mb-3 border {% if form.user_voted %}border-success{% endif %}" style="break-inside: avoid;">
     <h3 id="poll{{form.instance.id}}" class="card-header">
       {{form.instance.number}}. {{form.instance.question}}
       {% if not print_mode %}
         <a href="#poll{{form.instance.id}}">&#x1F517;</a>
-        <span class="float-right">
+        <span class="float-right poll-badges">
           {% if not form.instance.is_published %}<span class="badge badge-warning">Unsichtbar</span> {% endif %}
-          {% if form.user_voted %}<span class="badge badge-info">Abgestimmt</span> {% endif %}
+          {% if form.user_voted %}<span class="badge badge-info success-badge">Abgestimmt</span> {% endif %}
           {% if can_change %}<a href="{% url 'admin:poll_poll_change' form.instance.id %}"><span class="badge badge-danger">Bearbeiten</span></a>{% endif %}
           {% if can_change or can_export %}<a href="{% url 'poll:export_raw' form.instance.id %}"><span class="badge badge-success">
             {% if can_export %}Export (komplett){% else %}Export (anonym){% endif %}
@@ -123,7 +123,12 @@
             {% csrf_token %}
             {% bootstrap_form form layout='inline' %}
             {% if can_vote and poll_collection.is_active and form.instance.is_published  and not print_mode %}
-              {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-info" %}
+            {% if form.user_voted %}
+              {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-success submit-button" %}
+            {% else %}
+              {% bootstrap_button "Abstimmen" button_type="submit" button_class="btn-info" extra_classes="submit-button" %}
+            {% endif %}
+            {% bootstrap_button "Stimme zurückziehen" button_type="reset" button_class="btn-warning" extra_classes="retract-button" %}
             {% endif %}
             <input type="hidden" name="next" value="{{ next }}?last_voted={{form.instance.id}}&tag={{search_tag}}&q={{search_q}}#poll{{form.instance.id}}" />
           </form>

@@ -124,16 +124,13 @@ def poll_collection_view(request, poll_collection_id):
 @login_required
 def api_vote(request, poll_id: int):
     r_args = {'content_type': 'application/json'}
+
+    if request.method not in ('DELETE', 'POST'):
+        return HttpResponse(json.dumps({'error': 'Method not allowed!'}), status=405, **r_args)
     try:
         poll = Poll.objects.get(pk=poll_id)
     except Poll.DoesNotExist:
         return HttpResponse(json.dumps({'error': 'No such poll'}), status=404, **r_args)
-
-    if not poll.poll_collection.can_vote(request.user):
-        return HttpResponse(json.dumps({'error': 'You are not authorized to vote on this poll'}), status=403, **r_args)
-
-    if not request.method == 'POST':
-        return HttpResponse(json.dumps({'error': 'Invalid request!'}), status=400, **r_args)
 
     if not poll.poll_collection.is_active:
         return HttpResponse(
@@ -143,40 +140,48 @@ def api_vote(request, poll_id: int):
             status=400,
             **r_args)
 
-    request_data = json.loads(request.body.decode('utf-8'))
+    if not poll.poll_collection.can_vote(request.user):
+        return HttpResponse(json.dumps({'error': 'You are not authorized to vote on this poll'}), status=403, **r_args)
 
+    if request.method == 'DELETE':
+        return api_vote_delete(request, poll)
+    elif request.method == 'POST':
+        return api_vote_update(request, poll)
+
+
+def api_vote_delete(request, poll: Poll):
+    r_args = {'content_type': 'application/json'}
+
+    request_data = {} if request.method == 'DELETE' else json.loads(request.body.decode('utf-8'))
     form = PollForm(request_data, instance=poll, user=request.user)
+
+    vote: Vote = Vote.objects \
+        .filter(poll=poll, user=request.user)
+    vote.delete()
+
+    return HttpResponse(json.dumps({
+        'message': f'Deine Stimme für \'{poll}\' wurde gelöscht.',
+        'pollResults': poll.get_result_data(form.show_results)
+    }))
+
+
+def api_vote_update(request, poll: Poll):
+    r_args = {'content_type': 'application/json'}
+
+    request_data = {} if request.method == 'DELETE' else json.loads(request.body.decode('utf-8'))
+    form = PollForm(request_data, instance=poll, user=request.user)
+
     if form.is_valid():
         form.save(request.user)
-        results = {'totalVotes': form.instance.vote_count, 'options': [], 'type': form.instance.poll_type}
-        if form.show_results and not form.instance.is_text:
-            item: Item
-            for (item, val, _) in form.instance.results:
-                option = {
-                    'value': item.value,
-                    'count': val if form.instance.is_prio else item.vote_count
-                }
-                if form.instance.poll_type == Poll.YESNONONE:
-                    count = [0, 0, 0]
-                    for v in form.instance.votes:
-                        i = 2
-                        if v.text == 'ja':
-                            i = 0
-                        if v.text == 'nein':
-                            i = 1
-                        count[i] = count[i] + 1
-                    option['count'] = count
-                results['options'].append(option)
         return HttpResponse(json.dumps({
             'message': f'Deine Stimme für \'{poll}\' wurde gespeichert.',
-            'pollResults': results
+            'pollResults': poll.get_result_data(form.show_results)
         }), **r_args)
     else:
         logging.info("%s", form.errors)
         return HttpResponse(json.dumps({'error': f'Deine Wahl für \'{poll}\' konnte nicht gespeichert werden!'}),
                             status=500,
                             **r_args)
-
 
 @login_required
 def export_raw(request, poll_id):
@@ -211,7 +216,7 @@ def export_raw(request, poll_id):
         header += [i.export_key or i.value for i in poll.items]
     else:
         return HttpResponse('Exporting this poll type is not supported', status=503)
-    
+
     out.writerow(header)
     for user, votes in itertools.groupby(sorted(votes, key=lambda V: V.user.id), lambda V: V.user):
         votes = list(votes)
@@ -350,7 +355,7 @@ def export_voters(request, poll_collection_id):
 
     for vote in votes:
         user = vote.user
-        
+
         mnr = ""
         email = user.email
         if hasattr(user, 'userprofile'):

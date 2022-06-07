@@ -169,6 +169,29 @@ class Poll(models.Model):
                     ret += [(item, percent, percent)]
         return ret
 
+    def get_result_data(self, show_results):
+        results = {'totalVotes': self.vote_count, 'options': [], 'type': self.poll_type}
+        if show_results and not self.is_text:
+            item: Item
+            for (item, val, _) in self.results:
+                option = {
+                    'value': item.value,
+                    'count': val if self.is_prio else item.vote_count
+                }
+                if self.poll_type == Poll.YESNONONE:
+                    count = [0, 0, 0]
+                    for v in self.votes:
+                        i = 2
+                        if v.text == 'ja':
+                            i = 0
+                        if v.text == 'nein':
+                            i = 1
+                        count[i] = count[i] + 1
+                    option['count'] = count
+                results['options'].append(option)
+
+        return results
+
     @property
     def votes(self):
         return Vote.objects \
