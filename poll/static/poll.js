@@ -2,6 +2,11 @@
 
 async function updatePollSummary(formContainer, pollResults) {
     let resultContainer = formContainer.querySelector(".poll-result");
+
+    // Stop early if no results are shown
+    if (resultContainer === null)
+        return;
+
     let resultOptions = formContainer.querySelectorAll(".poll-result li");
 
     resultContainer.querySelector(".total-vote-count").innerText = pollResults["totalVotes"]
