@@ -126,7 +126,6 @@ function showAlert(message, extraClasses) {
 
 function applyFilters() {
 
-    console.log("filterIds: ", filterIds);
 
     updateUrlSearchParams();
 
@@ -175,7 +174,6 @@ function applyFilters() {
         clearFilterButton.style.display = "none";
     else
         clearFilterButton.style.removeProperty("display");
-    console.log("filterWords: ", filterWords);
 
     questionsToDisplay
         .forEach(card => { card.style.removeProperty("display"); });
@@ -325,6 +323,11 @@ function clearFilters(event) {
     }
 }
 
+function updateSearchFilter(e) {
+    filterQuery = e.target.value;
+    applyFilters();
+}
+
 function updateUrlSearchParams() {
 
     let searchParams = new URLSearchParams(window.location.search);
@@ -356,7 +359,7 @@ function updateUrlSearchParams() {
 
 let urlParams = new URLSearchParams(window.location.search);
 let tagFilters = urlParams.getAll("tag");
-let filterQuery = urlParams.get("q") ?? ""
+let filterQuery = urlParams.get("q") ?? "";
 let filterIds = urlParams.getAll("p")
     .map(s => {
         try {
@@ -389,12 +392,11 @@ document.querySelectorAll(".tag-filter-button").forEach(btn => {
     btn.addEventListener("click", e => { toggleTagFilter(e, btn.getAttribute("data-tag"))})
 });
 
-document.querySelector(".search-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    let data = new FormData(e.target);
-    filterQuery = data.get("q");
-    applyFilters();
-});
+let searchForm = document.querySelector(".search-form");
+let searchField = searchForm.querySelector("#filter-q");
+searchForm.querySelector("button[type=submit]").style.display = "none";
+searchField.addEventListener("input", updateSearchFilter);
+searchField.addEventListener("propertychange", updateSearchFilter);
 
 if (filterQuery.length !== 0 || tagFilters.length !== 0 || filterIds.length !== 0)
     applyFilters();

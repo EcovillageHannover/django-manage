@@ -69,9 +69,9 @@
              {% if not search_p and not search_q and not search_tag %}style="display: none;"{% endif %}>Alle anzeigen</a>
         </div>
         <div class="col-sm-12 form-group row mt-4">
-          <label class="col-sm-2 col-form-label" for="q"><strong>Freitextsuche:</strong></label>
+          <label class="col-sm-2 col-form-label" for="filter-q"><strong>Freitextsuche:</strong></label>
           <div class="col-sm-8">
-            <input type="text" class="form-control mb-2 mr-sm-2" id="q" name="q" value="{{search_q}}"/>
+            <input type="text" class="form-control mb-2 mr-sm-2" id="filter-q" name="q" value="{{search_q}}"/>
           </div>
           <button type="submit" class="btn btn-primary">Los</button>
           <input type="hidden" name="tag" value="{{ search_tag }}"/>
